@@ -18,12 +18,12 @@ app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 global_init('db/mars_exploers.db')
 api = Api(app)
 url = 'http://127.0.0.1:8080/'
- api.add_resource(users_resourse.UserListResource, '/api/v2/user')
-    api.add_resource(jobs_resoursce.JobsListResource, '/api/v2/jobs')
+api.add_resource(users_resourse.UserListResource, '/api/v2/user')
+api.add_resource(jobs_resoursce.JobsListResource, '/api/v2/jobs')
 
-    # для одного объекта
-    api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')
-    api.add_resource(jobs_resoursce.JobsResource, '/api/v2/job/<int:jobs_id>')
+# для одного объекта
+api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')
+api.add_resource(jobs_resoursce.JobsResource, '/api/v2/job/<int:jobs_id>')
 
 if __name__ == '__main__':
     # для списка объектов

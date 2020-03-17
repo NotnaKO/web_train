@@ -1,7 +1,7 @@
 from flask import *
 from .db_session import create_session
 from .users import User
-from flask_restful import reqparse, abort, Api, Resource
+from flask_restful import reqparse, abort, Resource
 
 
 def abort_if_user_not_found(user_id):
@@ -17,7 +17,7 @@ class UserResource(Resource):
         session = create_session()
         user = session.query(User).get(user_id)
         return jsonify({'user': user.to_dict(
-            only=('id', 'surname', 'name', 'age', 'position', 'speciality', 'email', 'address'))})
+            only=('id', 'surname', 'name', 'age', 'position', 'email', 'address'))})
 
     def delete(self, user_id):
         abort_if_user_not_found(user_id)
@@ -32,11 +32,9 @@ parser = reqparse.RequestParser()
 parser.add_argument('surname', required=True)
 parser.add_argument('name', required=True)
 parser.add_argument('age', required=True, type=int)
-parser.add_argument('position', required=True)
-parser.add_argument('speciality', required=True)
+parser.add_argument('position', required=True, type=int)
 parser.add_argument('email', required=True)
 parser.add_argument('address', required=True)
-parser.add_argument('position', required=True)
 
 
 class UserListResource(Resource):
@@ -54,9 +52,8 @@ class UserListResource(Resource):
             name=args['name'],
             age=args['age'],
             position=args['position'],
-            speciality=args['speciality'],
             email=args['email'],
-            address=args['address'],
+            address=args['address']
         )
         session.add(user)
         session.commit()

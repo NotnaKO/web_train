@@ -1,3 +1,4 @@
+werkzeug
 flask
 flask_wtf
 wtforms
@@ -6,5 +7,3 @@ requests
 flask_restful
 sqlalchemy
 sqlalchemy_serializer
-gunicorn
-datetime

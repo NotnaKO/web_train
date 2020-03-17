@@ -2,7 +2,7 @@ import datetime
 import sqlalchemy
 from .db_session import SqlAlchemyBase
 from werkzeug.security import *
-from  sqlalchemy import orm
+from sqlalchemy import orm
 from flask_login import UserMixin
 from sqlalchemy_serializer import SerializerMixin
 
@@ -17,17 +17,16 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
     age = sqlalchemy.Column(sqlalchemy.Integer,
                             nullable=True)
     position = sqlalchemy.Column(sqlalchemy.String, nullable=True)
-    speciality = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     address = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     email = sqlalchemy.Column(sqlalchemy.String,
                               index=True, unique=True, nullable=True)
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     modified_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                       default=datetime.datetime.now)
-    jobs = orm.relation('Jobs', back_populates='user')
+    article = orm.relation('Articles', back_populates='user')
 
     def __repr__(self):
-        return f'<Colonist> {self.id} {self.surname} {self.name}'
+        return f'{self.name} {self.surname}'
 
     def set_password(self, password):
         self.hashed_password = generate_password_hash(password)

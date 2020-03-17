@@ -1,11 +1,13 @@
-from sqlalchemy import orm
-import sqlalchemy
-from .db_session import SqlAlchemyBase
-from .users import SerializerMixin
 import datetime
 
+import sqlalchemy
+from sqlalchemy import orm
 
-class Article(SqlAlchemyBase, SerializerMixin):
+from .db_session import SqlAlchemyBase
+from .users import SerializerMixin
+
+
+class Articles(SqlAlchemyBase, SerializerMixin):
     __tablename__ = 'article'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     author = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.id"))

@@ -1,15 +1,8 @@
-from flask import Flask, render_template, redirect, request, abort, jsonify, make_response
-from flask_wtf import *
-from wtforms.validators import *
-from wtforms import *
-from wtforms.fields.html5 import EmailField
-from data.db_session import global_init
-from data.db_session import create_session
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from requests import get
-from api_files.geo_api import search_topo_coord_and_name, draw_image, get_spn_ll, find_topo
+from flask import Flask
 from flask_restful import Api
+
 from data import users_resourse, articles_resoursce
+from data.db_session import global_init
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
@@ -17,9 +10,9 @@ global_init('db/mars_exploers.db')
 api = Api(app)
 url = 'http://127.0.0.1:8080/'
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
-api.add_resource(articles_resoursce.ArticleListResource, '/api/v2/articles')
+api.add_resource(articles_resoursce.ArticlesListResource, '/api/v2/articles')
 api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')
-api.add_resource(articles_resoursce.ArticleResource, '/api/v2/articles/<int:article_id>')
+api.add_resource(articles_resoursce.ArticlesResource, '/api/v2/articles/<int:article_id>')
 
 if __name__ == '__main__':
     app.run()

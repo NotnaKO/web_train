@@ -18,7 +18,6 @@ global_init('db/economy_science.db')
 login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
-url = 'http://127.0.0.1:8080/'
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
 api.add_resource(articles_resoursce.ArticlesListResource, '/api/v2/articles')
 api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')

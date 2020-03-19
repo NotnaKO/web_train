@@ -5,7 +5,7 @@ from flask_wtf import *
 from wtforms import *
 from wtforms.fields.html5 import EmailField
 from wtforms.validators import *
-
+import requests
 from data import users_resourse, articles_resoursce
 from data.articles import Articles
 from data.db_session import create_session
@@ -25,16 +25,14 @@ api.add_resource(articles_resoursce.ArticlesResource, '/api/v2/articles/<int:art
 
 
 class RegisterForm(FlaskForm):
-    email = EmailField('Login/email', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    password_again = PasswordField('Repeat password', validators=[DataRequired()])
-    surname = StringField('Surname', validators=[DataRequired()])
-    name = StringField('Name', validators=[DataRequired()])
-    age = IntegerField('Age', validators=[DataRequired()])
-    position = StringField('Position', validators=[DataRequired()])
-    speciality = StringField('Speciality', validators=[DataRequired()])
-    address = StringField('Address', validators=[DataRequired()])
-    submit = SubmitField('Submit')
+    email = EmailField('Email', validators=[DataRequired()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    password_again = PasswordField('Повторите пароль', validators=[DataRequired()])
+    surname = StringField('Фамилия', validators=[DataRequired()])
+    name = StringField('Имя', validators=[DataRequired()])
+    age = IntegerField('Возраст', validators=[DataRequired()])
+    address = StringField('Адрес', validators=[DataRequired()])
+    submit = SubmitField('Зарегистрироваться')
 
 
 class ArticlesForm(FlaskForm):
@@ -47,9 +45,9 @@ class ArticlesForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    email = EmailField('Login', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    remember_me = BooleanField('Remember me')
+    email = EmailField('Логин', validators=[DataRequired()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    remember_me = BooleanField('Запомнить меня')
     submit = SubmitField('Войти')
 
 
@@ -71,7 +69,7 @@ def login():
         return render_template('login.html',
                                message="Неправильный логин или пароль",
                                form=form)
-    return render_template('login.html', title='Authorization', form=form)
+    return render_template('login.html', title='Вход', form=form)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -83,10 +81,10 @@ def reqister():
                                    form=form,
                                    message="Пароли не совпадают")
         try:
-            if int(form.age.data) < 0:
+            if int(form.age.data) < 6:
                 return render_template('register.html', title='Регистрация',
                                        form=form,
-                                       message='Возраст должен быть не меньше 0')
+                                       message='Возраст должен быть не меньше 6')
         except BaseException:
             return render_template('register.html', title='Регистрация',
                                    form=form,
@@ -100,16 +98,14 @@ def reqister():
             name=form.name.data,
             email=form.email.data,
             age=form.age.data,
-            position=form.position.data,
             surname=form.surname.data,
-            speciality=form.speciality.data,
             address=form.address.data
         )
         user.set_password(form.password.data)
         session.add(user)
         session.commit()
         return redirect('/login')
-    return render_template('register.html', title='Register', form=form)
+    return render_template('register.html', title='Регистрация', form=form)
 
 
 @app.route('/addarticle', methods=['GET', 'POST'])

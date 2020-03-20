@@ -18,7 +18,7 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
     name = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     age = sqlalchemy.Column(sqlalchemy.Integer,
                             nullable=True)
-    position = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('access.id'), default=3)
+    position = sqlalchemy.Column(sqlalchemy.Integer, default=3)
     address = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     email = sqlalchemy.Column(sqlalchemy.String,
                               index=True, unique=True, nullable=True)

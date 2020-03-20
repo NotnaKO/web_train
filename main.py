@@ -1,3 +1,4 @@
+import requests
 from flask import Flask, render_template, redirect, request, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_restful import Api
@@ -66,8 +67,8 @@ def login():
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
             return redirect("/")
+        form.password.errors = ["Неправильный логин или пароль"]
         return render_template('login.html',
-                               message="Неправильный логин или пароль",
                                form=form)
     return render_template('login.html', title='Вход', form=form)
 
@@ -77,34 +78,38 @@ def reqister():
     form = RegisterForm()
     if form.validate_on_submit():
         if form.password.data != form.password_again.data:
+            form.password.errors = ["Пароли не совпадают"]
             return render_template('register.html', title='Регистрация',
-                                   form=form,
-                                   message="Пароли не совпадают")
+                                   form=form)
         try:
             if int(form.age.data) < 6:
+                form.age.errors = ["Возраст должен быть не менбше 6"]
                 return render_template('register.html', title='Регистрация',
-                                       form=form,
-                                       message='Возраст должен быть не меньше 6')
+                                       form=form)
         except BaseException:
+            form.age.errors = ['Неправильный формат возраста']
             return render_template('register.html', title='Регистрация',
-                                   form=form,
-                                   message='Неправильный возраст')
+                                   form=form)
         session = create_session()
         if session.query(User).filter(User.email == form.email.data).first():
+            form.email.errors = ["Такой пользователь уже есть"]
             return render_template('register.html', title='Регистрация',
-                                   form=form,
-                                   message="Такой пользователь уже есть")
-        user = User(
-            name=form.name.data,
-            email=form.email.data,
-            age=form.age.data,
-            surname=form.surname.data,
-            address=form.address.data
-        )
-        user.set_password(form.password.data)
-        session.add(user)
-        session.commit()
-        return redirect('/login')
+                                   form=form)
+        address = 'http://127.0.0.1:8080'
+        # address = 'https://pybank.herokuapp.com'
+        resp = requests.post(address + '/api/v2/users', json={
+            'name': form.name.data,
+            'surname': form.surname.data,
+            'age': form.age.data,
+            'address': form.address.data,
+            'email': form.email.data,
+            'password': form.password.data
+        })
+        if 'success' in resp.json():
+            return redirect('/login')
+        else:
+            return render_template('register.html', title='Регистрация',
+                                   form=form, message='Произошла ошибка. Проверьте данные ещё раз.')
     return render_template('register.html', title='Регистрация', form=form)
 
 
@@ -195,4 +200,5 @@ def logout():
 
 
 if __name__ == '__main__':
+    addres = 'https://pybank.herokuapp.com'
     app.run()

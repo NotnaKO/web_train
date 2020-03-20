@@ -132,8 +132,12 @@ def news():
     lis = list()
     session = create_session()
     items = []
-
     return render_template('index.html', list_data=lis, n=len(lis), title='Новочти', item=items)
+
+
+@app.route('/')  # Пока просто заглушка для удобства тестирования
+def main():
+    return render_template('base.html', title='Главная страница')
 
 
 @app.route('/articles/<int:id>', methods=['GET', 'POST'])

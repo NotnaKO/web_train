@@ -25,16 +25,14 @@ api.add_resource(articles_resoursce.ArticlesResource, '/api/v2/articles/<int:art
 
 
 class RegisterForm(FlaskForm):
-    email = EmailField('Login/email', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    password_again = PasswordField('Repeat password', validators=[DataRequired()])
-    surname = StringField('Surname', validators=[DataRequired()])
-    name = StringField('Name', validators=[DataRequired()])
-    age = IntegerField('Age', validators=[DataRequired()])
-    position = StringField('Position', validators=[DataRequired()])
-    speciality = StringField('Speciality', validators=[DataRequired()])
-    address = StringField('Address', validators=[DataRequired()])
-    submit = SubmitField('Submit')
+    email = EmailField('Email', validators=[DataRequired()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    password_again = PasswordField('Повторите пароль', validators=[DataRequired()])
+    surname = StringField('Фамилия', validators=[DataRequired()])
+    name = StringField('Имя', validators=[DataRequired()])
+    age = IntegerField('Возраст', validators=[DataRequired()])
+    address = StringField('Адрес', validators=[DataRequired()])
+    submit = SubmitField('Зарегистрироваться')
 
 
 class ArticlesForm(FlaskForm):
@@ -47,9 +45,9 @@ class ArticlesForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    email = EmailField('Login', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    remember_me = BooleanField('Remember me')
+    email = EmailField('Логин', validators=[DataRequired()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    remember_me = BooleanField('Запомнить меня')
     submit = SubmitField('Войти')
 
 
@@ -71,7 +69,7 @@ def login():
         return render_template('login.html',
                                message="Неправильный логин или пароль",
                                form=form)
-    return render_template('login.html', title='Authorization', form=form)
+    return render_template('login.html', title='Вход', form=form)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -83,10 +81,10 @@ def reqister():
                                    form=form,
                                    message="Пароли не совпадают")
         try:
-            if int(form.age.data) < 0:
+            if int(form.age.data) < 6:
                 return render_template('register.html', title='Регистрация',
                                        form=form,
-                                       message='Возраст должен быть не меньше 0')
+                                       message='Возраст должен быть не меньше 6')
         except BaseException:
             return render_template('register.html', title='Регистрация',
                                    form=form,
@@ -100,16 +98,14 @@ def reqister():
             name=form.name.data,
             email=form.email.data,
             age=form.age.data,
-            position=form.position.data,
             surname=form.surname.data,
-            speciality=form.speciality.data,
             address=form.address.data
         )
         user.set_password(form.password.data)
         session.add(user)
         session.commit()
         return redirect('/login')
-    return render_template('register.html', title='Register', form=form)
+    return render_template('register.html', title='Регистрация', form=form)
 
 
 @app.route('/addarticle', methods=['GET', 'POST'])
@@ -131,18 +127,17 @@ def reg_article():
     return render_template('add_article.html', title='Register article', form=form)
 
 
-@app.route('/')
-def main():
+@app.route('/news')
+def news():
     lis = list()
     session = create_session()
     items = []
-    for article in session.query(Articles).all():
-        user = session.query(User).filter(User.id == article.team_leader).first()
-        fin = 'Is finished' if article.is_finished else 'Is not finished'
-        lis.append(
-            [article.article, user.surname + ' ' + user.name, f'{article.work_size} часов', article.collaborators, fin])
-        items.append(article)
-    return render_template('index.html', list_data=lis, n=len(lis), title='Works Log', item=items)
+    return render_template('index.html', list_data=lis, n=len(lis), title='Новочти', item=items)
+
+
+@app.route('/')  # Пока просто заглушка для удобства тестирования
+def main():
+    return render_template('base.html', title='Главная страница')
 
 
 @app.route('/articles/<int:id>', methods=['GET', 'POST'])

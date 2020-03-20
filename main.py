@@ -5,7 +5,7 @@ from flask_wtf import *
 from wtforms import *
 from wtforms.fields.html5 import EmailField
 from wtforms.validators import *
-import requests
+
 from data import users_resourse, articles_resoursce
 from data.articles import Articles
 from data.db_session import create_session
@@ -127,18 +127,13 @@ def reg_article():
     return render_template('add_article.html', title='Register article', form=form)
 
 
-@app.route('/')
-def main():
+@app.route('/news')
+def news():
     lis = list()
     session = create_session()
     items = []
-    for article in session.query(Articles).all():
-        user = session.query(User).filter(User.id == article.team_leader).first()
-        fin = 'Is finished' if article.is_finished else 'Is not finished'
-        lis.append(
-            [article.article, user.surname + ' ' + user.name, f'{article.work_size} часов', article.collaborators, fin])
-        items.append(article)
-    return render_template('index.html', list_data=lis, n=len(lis), title='Works Log', item=items)
+
+    return render_template('index.html', list_data=lis, n=len(lis), title='Новочти', item=items)
 
 
 @app.route('/articles/<int:id>', methods=['GET', 'POST'])

@@ -6,9 +6,8 @@ from flask_wtf import *
 from wtforms import *
 from wtforms.fields.html5 import EmailField
 from wtforms.validators import *
-
 from data import users_resourse, news_resource
-from data.news import News
+from data.news import News, SEPARATOR
 from data.db_session import create_session
 from data.db_session import global_init
 from data.users import User
@@ -42,6 +41,8 @@ class RegisterForm(FlaskForm):
 class NewsForm(FlaskForm):
     author = StringField('Ваше логин', validators=[DataRequired()])
     header = StringField('Заголовок новости', validators=[DataRequired()])
+    theme = StringField('Тема новости', validators=[DataRequired()])
+    preview = TextAreaField('Описание новости', validators=[DataRequired()])
     text = TextAreaField('Текст новости', validators=[DataRequired()])
     password = PasswordField('Пароль', validators=[DataRequired()])
     submit = SubmitField('Submit')
@@ -52,6 +53,15 @@ class LoginForm(FlaskForm):
     password = PasswordField('Пароль', validators=[DataRequired()])
     remember_me = BooleanField('Запомнить меня')
     submit = SubmitField('Войти')
+
+
+class MainNews:
+    def __init__(self, idi: int):
+        news = requests.get(address + f'/api/v2/news/{idi}').json()['news']
+        self.header = news['header']
+        self.preview, self.text = news['text'].split(SEPARATOR)
+        self.theme = news['theme']
+        self.date = news['modified_date']
 
 
 @login_manager.user_loader
@@ -121,6 +131,8 @@ def reg_news():
         resp = requests.post(address + '/api/v2/news', json={
             'author': form.author.data,
             'header': form.header.data,
+            'theme': form.theme.data,
+            'preview': form.preview.data,
             'text': form.text.data,
             'user': current_user.id,
             'password': form.password.data
@@ -137,7 +149,15 @@ def reg_news():
 
 @app.route('/news/page/<int:number>')
 def news(number):
-    return render_template('index.html')
+    news = requests.get(address + '/api/v2/news').json()['news']
+    params = {
+        'main_news': MainNews(news[number]['id']),
+        'news2': MainNews(news[number + 1]['id']),
+        'news3': MainNews(news[number + 2]['id']),
+        'news4': MainNews(news[number + 3]['id']),
+        'news5': MainNews(news[number + 4]['id']),
+        'news6': MainNews(news[number + 5]['id'])}
+    return render_template('index.html', **params)
 
 
 @app.route('/')  # Пока просто заглушка для удобства тестирования
@@ -145,7 +165,7 @@ def main():
     return render_template('base.html', title='Главная страница')
 
 
-@app.route('/news/<int:id>', methods=['GET', 'POST'])
+@app.route('/news/edit_news/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_news(id):
     form = NewsForm()
@@ -178,7 +198,7 @@ def edit_news(id):
     return render_template('add_news.html', title='Edit news', form=form)
 
 
-@app.route('/news_delete/<int:id>', methods=['GET', 'POST'])
+@app.route('/news/delete_news/<int:id>', methods=['GET', 'POST'])
 @login_required
 def news_delete(id):
     session = create_session()
@@ -200,5 +220,4 @@ def logout():
 
 
 if __name__ == '__main__':
-    addres = 'https://pybank.herokuapp.com'
     app.run()

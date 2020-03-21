@@ -1,6 +1,6 @@
 from flask import *
 from flask_restful import reqparse, abort, Resource
-from .news import News
+from .news import News, SEPARATOR
 from .users import User
 from .address import Address
 from .db_session import create_session
@@ -8,11 +8,11 @@ import random
 import os
 
 
-def abort_if_article_not_found(article_id):
+def abort_if_news_not_found(news_id):
     session = create_session()
-    news = session.query(News).get(article_id)
+    news = session.query(News).get(news_id)
     if not news:
-        abort(404, message=f"news {article_id} not found")
+        abort(404, message=f"news {news_id} not found")
 
 
 def check_user(use, pas):
@@ -24,17 +24,20 @@ def check_user(use, pas):
 
 
 class NewsResource(Resource):
-    def get(self, article_id):
-        abort_if_article_not_found(article_id)
+    def get(self, news_id):
+        abort_if_news_not_found(news_id)
         session = create_session()
-        news = session.query(News).get(article_id)
-        return jsonify({'news': news.to_dict(
-            only=('id', 'author', 'header'))})
+        news = session.query(News).get(news_id)
+        d = {'news': news.to_dict(
+            only=('id', 'author', 'header', 'theme', 'modified_date'))}
+        with open(os.path.join('news', news.text_address[0].name), encoding='utf-8') as f:
+            d['news']['text'] = f.read()
+        return jsonify(d)
 
-    def delete(self, article_id):
-        abort_if_article_not_found(article_id)
+    def delete(self, news_id):
+        abort_if_news_not_found(news_id)
         session = create_session()
-        news = session.query(News).get(article_id)
+        news = session.query(News).get(news_id)
         session.delete(news)
         session.commit()
         return jsonify({'success': 'OK'})
@@ -45,12 +48,14 @@ class NewsListResource(Resource):
         session = create_session()
         news = session.query(News).all()
         return jsonify({'news': [item.to_dict(
-            only=('author', 'header')) for item in news]})
+            only=('id', 'header')) for item in news]})
 
     def post(self):
         parser = reqparse.RequestParser()
-        parser.add_argument('author', required=True)
+        parser.add_argument('author', required=True, type=str)
         parser.add_argument('header', required=True)
+        parser.add_argument('theme', required=True, type=str)
+        parser.add_argument('preview', required=True, type=str)
         parser.add_argument('text', required=True, type=str)
         parser.add_argument('user', required=True, type=int)
         parser.add_argument('password', required=True)
@@ -70,12 +75,12 @@ class NewsListResource(Resource):
                 break
         if not text_address:
             return jsonify({'error': 'not_unique_header'})
-        news = News(author=args['author'], header=args['header'])
+        news = News(author=args['author'], header=args['header'], theme=args['theme'])
         news.text_address.append(Address(name=text_address))
         user.news.append(news)
         session.merge(user)
         session.merge(news)
         session.commit()
         with open(os.path.join('news/' + text_address), encoding='utf-8', mode='w') as text_file:
-            text_file.write(args['text'])
+            text_file.write(args['preview'] + SEPARATOR + args['text'])
         return jsonify({'success': 'OK'})

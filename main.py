@@ -7,8 +7,8 @@ from wtforms import *
 from wtforms.fields.html5 import EmailField
 from wtforms.validators import *
 
-from data import users_resourse, articles_resoursce
-from data.articles import Articles
+from data import users_resourse, news_resource
+from data.news import News
 from data.db_session import create_session
 from data.db_session import global_init
 from data.users import User
@@ -19,10 +19,13 @@ global_init('db/economy_science.db')
 login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
+address = 'http://127.0.0.1:8080'
+if __name__ == '__main__':
+    address = 'https://pybank.herokuapp.com'
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
-api.add_resource(articles_resoursce.ArticlesListResource, '/api/v2/articles')
+api.add_resource(news_resource.NewsListResource, '/api/v2/news')
 api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')
-api.add_resource(articles_resoursce.ArticlesResource, '/api/v2/articles/<int:article_id>')
+api.add_resource(news_resource.NewsResource, '/api/v2/news/<int:news_id>')
 
 
 class RegisterForm(FlaskForm):
@@ -36,12 +39,11 @@ class RegisterForm(FlaskForm):
     submit = SubmitField('Зарегистрироваться')
 
 
-class ArticlesForm(FlaskForm):
-    team_leader = IntegerField('Team leader id', validators=[DataRequired()])
-    article = StringField('Article Title', validators=[DataRequired()])
-    work_size = IntegerField('Work size', validators=[DataRequired()])
-    collaborators = StringField('Collaborators', validators=[DataRequired()])
-    is_finished = BooleanField('Is article finished?')
+class NewsForm(FlaskForm):
+    author = StringField('Ваше логин', validators=[DataRequired()])
+    header = StringField('Заголовок новости', validators=[DataRequired()])
+    text = TextAreaField('Текст новости', validators=[DataRequired()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
 
@@ -95,8 +97,6 @@ def reqister():
             form.email.errors = ["Такой пользователь уже есть"]
             return render_template('register.html', title='Регистрация',
                                    form=form)
-        address = 'http://127.0.0.1:8080'
-        # address = 'https://pybank.herokuapp.com'
         resp = requests.post(address + '/api/v2/users', json={
             'name': form.name.data,
             'surname': form.surname.data,
@@ -113,31 +113,31 @@ def reqister():
     return render_template('register.html', title='Регистрация', form=form)
 
 
-@app.route('/addarticle', methods=['GET', 'POST'])
-def reg_article():
-    form = ArticlesForm()
+@login_required
+@app.route('/news/add_news', methods=['GET', 'POST'])
+def reg_news():
+    form = NewsForm()
     if form.validate_on_submit():
-        session = create_session()
-        article = Articles(
-            team_leader=form.team_leader.data,
-            article=form.article.data,
-            work_size=form.work_size.data,
-            collaborators=form.collaborators.data,
-            is_finished=form.is_finished.data,
-        )
-        current_user.articles.append(article)
-        session.merge(current_user)
-        session.commit()
-        return redirect('/')
-    return render_template('add_article.html', title='Register article', form=form)
+        resp = requests.post(address + '/api/v2/news', json={
+            'author': form.author.data,
+            'header': form.header.data,
+            'text': form.text.data,
+            'user': current_user.id,
+            'password': form.password.data
+        }).json()
+        if 'success' in resp:
+            return redirect('/')
+        elif 'error' in resp:
+            if resp['error'] == 'not_unique_header':
+                form.header.errors = ['Пожалуйста, выберете другой заголовок. Этот уже занят.']
+            if resp['error'] == 'Bad user':
+                form.password.errors = ['Неверный пароль.']
+    return render_template('add_news.html', title='Добавление новости', form=form)
 
 
-@app.route('/news')
-def news():
-    lis = list()
-    session = create_session()
-    items = []
-    return render_template('index.html', list_data=lis, n=len(lis), title='Новочти', item=items)
+@app.route('/news/page/<int:number>')
+def news(number):
+    return render_template('index.html')
 
 
 @app.route('/')  # Пока просто заглушка для удобства тестирования
@@ -145,47 +145,47 @@ def main():
     return render_template('base.html', title='Главная страница')
 
 
-@app.route('/articles/<int:id>', methods=['GET', 'POST'])
+@app.route('/news/<int:id>', methods=['GET', 'POST'])
 @login_required
-def edit_articles(id):
-    form = ArticlesForm()
+def edit_news(id):
+    form = NewsForm()
     if request.method == "GET":
         session = create_session()
-        articles = session.query(Articles).filter(Articles.id == id).filter(
-            (Articles.user == current_user) | (1 == current_user.id)).first()
-        if articles:
-            form.article.data = articles.article
-            form.team_leader.data = articles.team_leader
-            form.work_size.data = articles.work_size
-            form.collaborators.data = articles.collaborators
-            form.is_finished.data = articles.is_finished
+        news = session.query(News).filter(News.id == id).filter(
+            (News.user == current_user) | (1 == current_user.id)).first()
+        if news:
+            form.news.data = news.news
+            form.team_leader.data = news.team_leader
+            form.work_size.data = news.work_size
+            form.collaborators.data = news.collaborators
+            form.is_finished.data = news.is_finished
         else:
             abort(404)
     if form.validate_on_submit():
         session = create_session()
-        articles = session.query(Articles).filter(Articles.id == id).filter(
-            (Articles.user == current_user) | (1 == current_user.id)).first()
-        if articles:
-            articles.is_finished = form.is_finished.data
-            articles.collaborators = form.collaborators.data
-            articles.work_size = form.work_size.data
-            articles.team_leader = form.team_leader.data
-            articles.article = form.article.data
+        news = session.query(News).filter(News.id == id).filter(
+            (News.user == current_user) | (1 == current_user.id)).first()
+        if news:
+            news.is_finished = form.is_finished.data
+            news.collaborators = form.collaborators.data
+            news.work_size = form.work_size.data
+            news.team_leader = form.team_leader.data
+            news.news = form.news.data
             session.commit()
             return redirect('/')
         else:
             abort(404)
-    return render_template('add_article.html', title='Edit article', form=form)
+    return render_template('add_news.html', title='Edit news', form=form)
 
 
-@app.route('/articles_delete/<int:id>', methods=['GET', 'POST'])
+@app.route('/news_delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 def news_delete(id):
     session = create_session()
-    articles = session.query(Articles).filter(Articles.id == id).filter(
-        (Articles.user == current_user) | (1 == current_user.id)).first()
-    if articles:
-        session.delete(articles)
+    news = session.query(News).filter(News.id == id).filter(
+        (News.user == current_user) | (1 == current_user.id)).first()
+    if news:
+        session.delete(news)
         session.commit()
     else:
         abort(404)

@@ -25,7 +25,7 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     modified_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                       default=datetime.datetime.now)
-    articles = orm.relation('Articles', back_populates='user')
+    news = orm.relation('News', back_populates='user')
 
     def __repr__(self):
         return f'{self.name} {self.surname}'

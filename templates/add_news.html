@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="register">Добавление работы</h1>
+<form action="" method="post">
+    {{ form.hidden_tag() }}
+    {{ form.csrf_token }}
+    <div class="form-group">{{ form.author.label }}<br>
+        {{ form.author(class="form-control") }}<br>
+        {% for error in form.author.errors %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endfor %}
+    </div>
+    <div class="form-group">{{ form.header.label }}<br>
+        {{ form.header(class="form-control") }}<br>
+        {% for error in form.header.errors %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endfor %}
+    </div>
+    <div class="form-group">{{ form.text.label }}<br>
+        {{form.text(class="form-control", rows="6")}}<br>
+        {% for error in form.text.errors %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endfor %}
+    </div>
+    <div class="form-group">
+        {{form.password.label}}
+        {{ form.password(class="form-control")}}
+        {% for error in form.password.errors %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endfor %}
+    </div>
+    <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+    {{message}}
+</form>
+{% endblock %}

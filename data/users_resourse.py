@@ -29,15 +29,6 @@ class UserResource(Resource):
         return jsonify({'success': 'OK'})
 
 
-parser = reqparse.RequestParser()
-parser.add_argument('surname', required=True)
-parser.add_argument('name', required=True)
-parser.add_argument('age', required=True, type=int)
-parser.add_argument('email', required=True)
-parser.add_argument('address', required=True)
-parser.add_argument('password', required=True)
-
-
 class UserListResource(Resource):
     def get(self):
         session = create_session()
@@ -46,6 +37,14 @@ class UserListResource(Resource):
             only=('id', 'surname', 'name')) for item in user]})
 
     def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('surname', required=True)
+        parser.add_argument('name', required=True)
+        parser.add_argument('age', required=True, type=int)
+        parser.add_argument('email', required=True)
+        parser.add_argument('address', required=True)
+        parser.add_argument('password', required=True)
+
         args = parser.parse_args()
         session = create_session()
         user = User(

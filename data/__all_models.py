@@ -1,4 +1,3 @@
-from . import users
-from . import articles
-from . import category
-from . import access
+from .users import User
+from .address import Address
+from .news import News

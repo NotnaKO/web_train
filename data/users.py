@@ -18,14 +18,14 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
     name = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     age = sqlalchemy.Column(sqlalchemy.Integer,
                             nullable=True)
-    position = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('access.id'), default=3)
+    position = sqlalchemy.Column(sqlalchemy.Integer, default=3)
     address = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     email = sqlalchemy.Column(sqlalchemy.String,
                               index=True, unique=True, nullable=True)
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     modified_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                       default=datetime.datetime.now)
-    articles = orm.relation('Articles', back_populates='user')
+    news = orm.relation('News', back_populates='user')
 
     def __repr__(self):
         return f'{self.name} {self.surname}'

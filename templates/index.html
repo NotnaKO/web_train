@@ -9,11 +9,11 @@
                 полностью...</a></p>
         </div>
     </div>
+    {% if news2.z %}
     <div class="row mb-2">
         <div class="col-md-6">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
                 <div class="col p-4 d-flex flex-column position-static">
-                    <strong class="d-inline-block mb-2 text-primary">{{news2.theme}}</strong>
                     <h3 class="mb-0">{{news2.header}}</h3>
                     <div class="mb-1 text-muted">{{news2.date}}</div>
                     <p class="card-text mb-auto">{{news2.preview}}</p>
@@ -21,10 +21,10 @@
                 </div>
             </div>
         </div>
+        {% if news3.z %}
         <div class="col-md-6">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
                 <div class="col p-4 d-flex flex-column position-static">
-                    <strong class="d-inline-block mb-2 text-success">{{news3.theme}}</strong>
                     <h3 class="mb-0">{{news3.header}}</h3>
                     <div class="mb-1 text-muted">{{news3.date}}</div>
                     <p class="mb-auto">{{news3.preview}}</p>
@@ -32,47 +32,51 @@
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
+    {% endif %}
 </div>
 <main role="main" class="container">
+    {% if news4.z %}
     <div class="row">
-        <div class="col-md-8 blog-main">
-            <h3 class="pb-4 mb-4 font-italic border-bottom">
-                From the Firehose
+        <div class="col blog-main">
+            <h3 class="pb-4 mb-4 font-italic border-bottom" align="center">
+                Основные статьи
             </h3>
-
             <div class="blog-post">
-                <h2 class="blog-post-title">{{news4.header}}</h2>
-                <p class="blog-post-meta">{{news4.date}} by <a href="news4.author.id">{{news4.author + ' ' +
-                    news4.author.name}}</a></p>
+                <h2 class="blog-post-title" align="center">{{news4.header}}</h2>
+                <p class="blog-post-meta">{{news4.date}} by <a href="news4.author.id">{{news4.author_surname + ' ' +
+                    news4.author_name}}</a></p>
                 <p>{{news4.content}}</p>
             </div><!-- /.blog-post -->
+            {% if news5.z %}
             <div class="blog-post">
-                <h2 class="blog-post-title">{{news5.header}}</h2>
-                <p class="blog-post-meta">{{news5.date}} by <a href="news5.author.id">{{news5.author + ' ' +
-                    news5.author.name}}</a></p>
-                <p>{{news4.content}}</p>
+                <h2 class="blog-post-title" align="center">{{news5.header}}</h2>
+                <p class="blog-post-meta">{{news5.date}} by <a href="news5.author.id">{{news5.author_surname + ' ' +
+                    news5.author_name}}</a></p>
+                <p>{{news5.content}}</p>
             </div><!-- /.blog-post -->
-
+            {% endif %}
+            {% if news6.z %}
             <div class="blog-post">
-                <h2 class="blog-post-title">{{news6.header}}</h2>
-                <p class="blog-post-meta">{{news6.date}} by <a href="news6.author.id">{{news6.author + ' ' +
-                    news6.author.name}}</a></p>
-                <p>{{news4.content}}</p>
+                <h2 class="blog-post-title" align="center">{{news6.header}}</h2>
+                <p class="blog-post-meta">{{news6.date}} by <a href="news6.author.id">{{news6.author_surname + ' ' +
+                    news6.author_name}}</a></p>
+                <p>{{news6.content}}</p>
             </div><!-- /.blog-post -->
-
+            {% endif %}
             <nav class="blog-pagination">
                 {% if page.id >= 1 %}
-                <a class="btn btn-outline-primary" href="/news/page/{{page.id - 1}}">{{page.id - 1}}</a>
+                <a class="btn btn-outline-primary" href="/news/page/{{page.id - 1}}">{{page.id}}</a>
                 {% endif %}
                 <a class="btn btn-outline-secondary disabled" href="#" tabindex="-2"
-                   aria-disabled="true">{{page.id}}</a>
+                   aria-disabled="true">{{page.id + 1}}</a>
                 {% if page.id < max_page_id %}
-                <a class="btn btn-outline-primary" href="/news/page/{{page.id + 1}}" tabindex="-1">{{page.id + 1}}</a>
+                <a class="btn btn-outline-primary" href="/news/page/{{page.id + 1}}" tabindex="-1">{{page.id + 2}}</a>
+                {% endif %}
             </nav>
-
         </div><!-- /.blog-main -->
     </div><!-- /.row -->
-
+    {% endif %}
 </main>
 {% endblock %}

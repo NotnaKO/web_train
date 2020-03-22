@@ -64,6 +64,18 @@ class MainNews:
         self.author_surname = news['author_surname']
         self.author_name = news['author_name']
         self.date = news['modified_date'].split()[0]
+        self.z = True
+
+
+class Zagl:
+    def __init__(self):
+        self.header = ''
+        self.preview, self.content = '', ''
+        self.theme = ''
+        self.author_surname = ''
+        self.author_name = ''
+        self.date = ''
+        self.z = False
 
 
 class Page:
@@ -163,18 +175,32 @@ def reg_news():
     return render_template('add_news.html', title='Добавление новости', form=form, current_user=current_user)
 
 
+def abort_if_page_not_found(page_id):
+    if not news:
+        abort(404, message=f"page {page_id} not found")
+
+
 @app.route('/news/page/<int:number>')
 def news(number):
     news = requests.get(address + '/api/v2/news').json()['news']
+    max_news = len(news)
+    sp = []
+    for i in range(number * 6, number * 6 + 6):
+        if i < max_news:
+            sp.append(MainNews(news[i]['id']))
+        else:
+            break
+    if not sp:
+        abort_if_page_not_found(number)
     params = {
-        'main_news': MainNews(news[number]['id']),
-        'news2': MainNews(news[number + 1]['id']),
-        'news3': MainNews(news[number + 2]['id']),
-        'news4': MainNews(news[number + 3]['id']),
-        'news5': MainNews(news[number + 4]['id']),
-        'news6': MainNews(news[number + 5]['id']),
+        'main_news': sp[0],
+        'news2': sp[1] if len(sp) > 1 else Zagl(),
+        'news3': sp[2] if len(sp) > 2 else Zagl(),
+        'news4': sp[3] if len(sp) > 3 else Zagl(),
+        'news5': sp[4] if len(sp) > 4 else Zagl(),
+        'news6': sp[5] if len(sp) > 5 else Zagl(),
         'page': Page(number),
-        'max_page_id': len(news) // 6 - 1}
+        'max_page_id': max_news // 6}
     return render_template('index.html', **params)
 
 

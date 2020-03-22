@@ -29,7 +29,9 @@ class NewsResource(Resource):
         session = create_session()
         news = session.query(News).get(news_id)
         d = {'news': news.to_dict(
-            only=('id', 'author', 'header', 'theme', 'modified_date'))}
+            only=('id', 'header', 'theme', 'modified_date'))}
+        d['news']['author_surname'] = session.query(User).get(news.author).surname
+        d['news']['author_name'] = session.query(User).get(news.author).name
         with open(os.path.join('news', news.text_address[0].name), encoding='utf-8') as f:
             d['news']['text'] = f.read()
         return jsonify(d)
@@ -57,18 +59,17 @@ class NewsListResource(Resource):
         parser.add_argument('theme', required=True, type=str)
         parser.add_argument('preview', required=True, type=str)
         parser.add_argument('text', required=True, type=str)
-        parser.add_argument('user', required=True, type=int)
         parser.add_argument('password', required=True)
         args = parser.parse_args()
         session = create_session()
-        user = session.query(User).get(args['user'])
+        user = session.query(User).filter(User.email == args['author']).first()
         if user.email != args['author']:
             return jsonify({'error': 'Bad author'})
         if not check_user(user, args['password']):
             return jsonify({'error': 'Bad user'})
         text_address = ''
         for i in range(5):
-            a = args['header'] + str(user.id) + str(random.randint(1, 2 ** 15)) + '.txt'
+            a = args['header'] + str(user.id) + str(random.randint(1, 2 ** 14)) + '.txt'
             ad = session.query(Address).filter(Address.name == a).first()
             if not ad:
                 text_address = a

@@ -39,7 +39,7 @@ class RegisterForm(FlaskForm):
 
 
 class NewsForm(FlaskForm):
-    author = StringField('Ваше логин', validators=[DataRequired()])
+    author = StringField('Ваше логин')
     header = StringField('Заголовок новости', validators=[DataRequired()])
     theme = StringField('Тема новости', validators=[DataRequired()])
     preview = TextAreaField('Описание новости', validators=[DataRequired()])
@@ -59,9 +59,16 @@ class MainNews:
     def __init__(self, idi: int):
         news = requests.get(address + f'/api/v2/news/{idi}').json()['news']
         self.header = news['header']
-        self.preview, self.text = news['text'].split(SEPARATOR)
+        self.preview, self.content = news['text'].split(SEPARATOR)
         self.theme = news['theme']
-        self.date = news['modified_date']
+        self.author_surname = news['author_surname']
+        self.author_name = news['author_name']
+        self.date = news['modified_date'].split()[0]
+
+
+class Page:
+    def __init__(self, i: int):
+        self.id = i
 
 
 @login_manager.user_loader
@@ -128,15 +135,24 @@ def reqister():
 def reg_news():
     form = NewsForm()
     if form.validate_on_submit():
-        resp = requests.post(address + '/api/v2/news', json={
-            'author': form.author.data,
-            'header': form.header.data,
-            'theme': form.theme.data,
-            'preview': form.preview.data,
-            'text': form.text.data,
-            'user': current_user.id,
-            'password': form.password.data
-        }).json()
+        if current_user.is_authenticated:
+            resp = requests.post(address + '/api/v2/news', json={
+                'author': current_user.email,
+                'header': form.header.data,
+                'theme': form.theme.data,
+                'preview': form.preview.data,
+                'text': form.text.data,
+                'password': form.password.data
+            }).json()
+        else:
+            resp = requests.post(address + '/api/v2/news', json={
+                'author': form.author.data,
+                'header': form.header.data,
+                'theme': form.theme.data,
+                'preview': form.preview.data,
+                'text': form.text.data,
+                'password': form.password.data
+            }).json()
         if 'success' in resp:
             return redirect('/')
         elif 'error' in resp:
@@ -144,7 +160,7 @@ def reg_news():
                 form.header.errors = ['Пожалуйста, выберете другой заголовок. Этот уже занят.']
             if resp['error'] == 'Bad user':
                 form.password.errors = ['Неверный пароль.']
-    return render_template('add_news.html', title='Добавление новости', form=form)
+    return render_template('add_news.html', title='Добавление новости', form=form, current_user=current_user)
 
 
 @app.route('/news/page/<int:number>')
@@ -156,7 +172,9 @@ def news(number):
         'news3': MainNews(news[number + 2]['id']),
         'news4': MainNews(news[number + 3]['id']),
         'news5': MainNews(news[number + 4]['id']),
-        'news6': MainNews(news[number + 5]['id'])}
+        'news6': MainNews(news[number + 5]['id']),
+        'page': Page(number),
+        'max_page_id': len(news) // 6 - 1}
     return render_template('index.html', **params)
 
 

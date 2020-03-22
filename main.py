@@ -18,9 +18,8 @@ global_init('db/economy_science.db')
 login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
-address = 'http://127.0.0.1:8080'
-if __name__ == '__main__':
-    address = 'https://pybank.herokuapp.com'
+# address = 'http://127.0.0.1:8080'
+address = 'https://pybank.herokuapp.com'
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
 api.add_resource(news_resource.NewsListResource, '/api/v2/news')
 api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')

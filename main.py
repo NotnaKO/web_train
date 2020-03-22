@@ -18,8 +18,8 @@ global_init('db/economy_science.db')
 login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
-# address = 'http://127.0.0.1:8080'
-address = 'https://pybank.herokuapp.com'
+address = 'http://127.0.0.1:8080'
+# address = 'https://pybank.herokuapp.com'
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
 api.add_resource(news_resource.NewsListResource, '/api/v2/news')
 api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')
@@ -175,8 +175,7 @@ def reg_news():
 
 
 def abort_if_page_not_found(page_id):
-    if not news:
-        abort(404, message=f"page {page_id} not found")
+    abort(404)
 
 
 @app.route('/news/page/<int:number>')

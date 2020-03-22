@@ -37,9 +37,9 @@
     {% endif %}
 </div>
 <main role="main" class="container">
-    {% if news4.z %}
     <div class="row">
         <div class="col blog-main">
+            {% if news4.z %}
             <h3 class="pb-4 mb-4 font-italic border-bottom" align="center">
                 Основные статьи
             </h3>
@@ -65,6 +65,7 @@
                 <p>{{news6.content}}</p>
             </div><!-- /.blog-post -->
             {% endif %}
+            {% endif %}
             <nav class="blog-pagination">
                 {% if page.id >= 1 %}
                 <a class="btn btn-outline-primary" href="/news/page/{{page.id - 1}}">{{page.id}}</a>
@@ -77,6 +78,5 @@
             </nav>
         </div><!-- /.blog-main -->
     </div><!-- /.row -->
-    {% endif %}
 </main>
 {% endblock %}

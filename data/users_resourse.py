@@ -44,7 +44,6 @@ class UserListResource(Resource):
         parser.add_argument('email', required=True)
         parser.add_argument('address', required=True)
         parser.add_argument('password', required=True)
-
         args = parser.parse_args()
         session = create_session()
         user = User(

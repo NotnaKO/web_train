@@ -11,6 +11,9 @@ from data.news import News, SEPARATOR
 from data.db_session import create_session
 from data.db_session import global_init
 from data.users import User
+from algr.check_passwords import hard_check_password, LengthError, LetterError, SequenceError, DigitError, \
+    LanguageError, PasswordError
+from string import printable, ascii_letters, digits
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
@@ -18,8 +21,8 @@ global_init('db/economy_science.db')
 login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
-address = 'http://127.0.0.1:8080'
-# address = 'https://pybank.herokuapp.com'
+# address = 'http://127.0.0.1:8080'
+address = 'https://pybank.herokuapp.com'
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
 api.add_resource(news_resource.NewsListResource, '/api/v2/news')
 api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')
@@ -111,6 +114,47 @@ def reqister():
             form.password.errors = ["Пароли не совпадают"]
             return render_template('register.html', title='Регистрация',
                                    form=form)
+        s = set(form.email.data.split())
+        if s not in set():
+            form.email.errors = ['Email может состоять из английских букв, цифр и других символов']
+            return render_template('register.html', title='Регистрация',
+                                   form=form)
+        le, di, ot = False, False, False
+        for i in s:
+            if i in ascii_letters:
+                le = True
+            if i in printable and i not in digits and i not in ascii_letters:
+                ot = True
+            if le and di and ot:
+                break
+        if not le or not di or not ot:
+            form.email.errors = []
+            if not le:
+                form.email.errors.append('Email должен содержать английские буквы')
+            if not di:
+                form.email.errors.append('Email должен содержать цифры')
+            if not ot:
+                form.email.errors.append('Email должен содержать другие символы')
+            return render_template('register.html', title='Регистация', form=form)
+        try:
+            le = hard_check_password(form.password.data)
+            if le != 'ok':
+                raise PasswordError
+        except PasswordError as e:
+            if type(e) == LetterError:
+                form.password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
+            elif type(e) == LetterError:
+                form.password.errors = ['В пароле должно быть 8 и больше символов.']
+            elif type(e) == LanguageError:
+                form.password.errors = ['В пароле должныть только буквы английского языка, цифры и другие символы.']
+            elif type(e) == DigitError:
+                form.password.errors = ['В пароле должны быть цифры.']
+            elif type(e) == SequenceError:
+                form.password.errors = ['В пароле не должно быть трёх символов, идущих подряд на клавиатуре.']
+            else:
+                form.password.errors = ['Ошибка в пароле.']
+            return render_template('register.html', title='Регистрация', form=form)
+
         try:
             if int(form.age.data) < 6:
                 form.age.errors = ["Возраст должен быть не менбше 6"]

@@ -4,6 +4,7 @@ from .news import News, SEPARATOR
 from .users import User
 from .address import Address
 from .db_session import create_session
+from algr.user_search import get_by_email, AuthError
 import random
 import os
 
@@ -30,13 +31,25 @@ class NewsResource(Resource):
         news = session.query(News).get(news_id)
         d = {'news': news.to_dict(
             only=('id', 'header', 'theme', 'modified_date'))}
-        d['news']['author_surname'] = session.query(User).get(news.author).surname
-        d['news']['author_name'] = session.query(User).get(news.author).name
+        auth = session.query(User).get(news.author)
+        d['news']['author_surname'] = auth.surname
+        d['news']['author_name'] = auth.name
+        d['news']['author_id'] = auth.id
         with open(os.path.join('news', news.text_address[0].name), encoding='utf-8') as f:
             d['news']['text'] = f.read()
         return jsonify(d)
 
     def delete(self, news_id):
+        parser = reqparse.RequestParser()
+        parser.add_argument('email', required=True)
+        parser.add_argument('password', required=True)
+        args = parser.parse_args()
+        try:
+            user = get_by_email(args['email'])
+        except AuthError:
+            return jsonify({'error': 'Bad user'})
+        if not user.check_password(args['password']):
+            return jsonify({'error': 'Bad password'})
         abort_if_news_not_found(news_id)
         session = create_session()
         news = session.query(News).get(news_id)
@@ -76,12 +89,17 @@ class NewsListResource(Resource):
                 break
         if not text_address:
             return jsonify({'error': 'not_unique_header'})
-        news = News(author=args['author'], header=args['header'], theme=args['theme'])
-        news.text_address.append(Address(name=text_address))
+        s = ''
+        for i in text_address:
+            if i.isdigit() or i.isalpha():
+                s += i
+        news = News(author=user.id, header=args['header'], theme=args['theme'])
+        news.text_address.append(Address(name=s))
         user.news.append(news)
         session.merge(user)
         session.merge(news)
         session.commit()
-        with open(os.path.join('news/' + text_address), encoding='utf-8', mode='w') as text_file:
+
+        with open(os.path.join('news/' + s), encoding='utf-8', mode='w') as text_file:
             text_file.write(args['preview'] + SEPARATOR + args['text'])
         return jsonify({'success': 'OK'})

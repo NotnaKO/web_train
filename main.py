@@ -14,6 +14,7 @@ from data.users import User
 from algr.check_passwords import hard_check_password, LengthError, LetterError, SequenceError, DigitError, \
     LanguageError, PasswordError
 from string import printable, ascii_letters, digits
+from algr.user_search import get_by_email, get_by_id
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
@@ -21,7 +22,6 @@ global_init('db/economy_science.db')
 login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
-# address = 'http://127.0.0.1:8080'
 address = 'https://pybank.herokuapp.com'
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
 api.add_resource(news_resource.NewsListResource, '/api/v2/news')
@@ -65,6 +65,7 @@ class MainNews:
         self.theme = news['theme']
         self.author_surname = news['author_surname']
         self.author_name = news['author_name']
+        self.id = news['id']
         self.date = news['modified_date'].split()[0]
         self.z = True
 
@@ -87,16 +88,14 @@ class Page:
 
 @login_manager.user_loader
 def load_user(user_id):
-    session = create_session()
-    return session.query(User).get(user_id)
+    return get_by_id(user_id)
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        session = create_session()
-        user = session.query(User).filter(User.email == form.email.data).first()
+        user = get_by_email(form.email.data)
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
             return redirect("/")
@@ -110,32 +109,37 @@ def login():
 def reqister():
     form = RegisterForm()
     if form.validate_on_submit():
-        if form.password.data != form.password_again.data:
-            form.password.errors = ["Пароли не совпадают"]
-            return render_template('register.html', title='Регистрация',
-                                   form=form)
-        s = set(form.email.data.split())
-        if s not in set():
+        # email check
+        s = set(form.email.data)
+        if not (s <= set(printable)):
             form.email.errors = ['Email может состоять из английских букв, цифр и других символов']
             return render_template('register.html', title='Регистрация',
                                    form=form)
-        le, di, ot = False, False, False
+        le, ot = False, False
         for i in s:
             if i in ascii_letters:
                 le = True
             if i in printable and i not in digits and i not in ascii_letters:
                 ot = True
-            if le and di and ot:
+            if le and ot:
                 break
-        if not le or not di or not ot:
+        if not le or not ot:
             form.email.errors = []
             if not le:
                 form.email.errors.append('Email должен содержать английские буквы')
-            if not di:
-                form.email.errors.append('Email должен содержать цифры')
             if not ot:
                 form.email.errors.append('Email должен содержать другие символы')
             return render_template('register.html', title='Регистация', form=form)
+
+        if get_by_email(form.email.data):
+            form.email.errors = ["Такой пользователь уже есть"]
+            return render_template('register.html', title='Регистрация',
+                                   form=form)
+        # password check
+        if form.password.data != form.password_again.data:
+            form.password.errors = ["Пароли не совпадают"]
+            return render_template('register.html', title='Регистрация',
+                                   form=form)
         try:
             le = hard_check_password(form.password.data)
             if le != 'ok':
@@ -143,7 +147,7 @@ def reqister():
         except PasswordError as e:
             if type(e) == LetterError:
                 form.password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
-            elif type(e) == LetterError:
+            elif type(e) == LengthError:
                 form.password.errors = ['В пароле должно быть 8 и больше символов.']
             elif type(e) == LanguageError:
                 form.password.errors = ['В пароле должныть только буквы английского языка, цифры и другие символы.']
@@ -154,7 +158,7 @@ def reqister():
             else:
                 form.password.errors = ['Ошибка в пароле.']
             return render_template('register.html', title='Регистрация', form=form)
-
+        # age check
         try:
             if int(form.age.data) < 6:
                 form.age.errors = ["Возраст должен быть не менбше 6"]
@@ -162,11 +166,6 @@ def reqister():
                                        form=form)
         except BaseException:
             form.age.errors = ['Неправильный формат возраста']
-            return render_template('register.html', title='Регистрация',
-                                   form=form)
-        session = create_session()
-        if session.query(User).filter(User.email == form.email.data).first():
-            form.email.errors = ["Такой пользователь уже есть"]
             return render_template('register.html', title='Регистрация',
                                    form=form)
         resp = requests.post(address + '/api/v2/users', json={
@@ -218,6 +217,12 @@ def reg_news():
     return render_template('add_news.html', title='Добавление новости', form=form, current_user=current_user)
 
 
+@app.route('/news/<int:number>')
+def show_news(number):
+    news = MainNews(number)
+    return render_template('show_news.html', news=news)
+
+
 def abort_if_page_not_found(page_id):
     abort(404)
 
@@ -243,7 +248,7 @@ def news(number):
         'news6': sp[5] if len(sp) > 5 else Zagl(),
         'page': Page(number),
         'max_page_id': max_news // 6}
-    return render_template('index.html', **params)
+    return render_template('news_page.html', **params)
 
 
 @app.route('/')  # Пока просто заглушка для удобства тестирования

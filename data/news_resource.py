@@ -4,6 +4,7 @@ from .news import News, SEPARATOR
 from .users import User
 from .address import Address
 from .db_session import create_session
+from algr.user_search import get_by_email, AuthError
 import random
 import os
 
@@ -39,6 +40,16 @@ class NewsResource(Resource):
         return jsonify(d)
 
     def delete(self, news_id):
+        parser = reqparse.RequestParser()
+        parser.add_argument('email', required=True)
+        parser.add_argument('password', required=True)
+        args = parser.parse_args()
+        try:
+            user = get_by_email(args['email'])
+        except AuthError:
+            return jsonify({'error': 'Bad user'})
+        if not user.check_password(args['password']):
+            return jsonify({'error': 'Bad password'})
         abort_if_news_not_found(news_id)
         session = create_session()
         news = session.query(News).get(news_id)

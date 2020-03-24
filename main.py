@@ -10,11 +10,10 @@ from data import users_resourse, news_resource
 from data.news import News, SEPARATOR
 from data.db_session import create_session
 from data.db_session import global_init
-from data.users import User
 from algr.check_passwords import hard_check_password, LengthError, LetterError, SequenceError, DigitError, \
     LanguageError, PasswordError
 from string import printable, ascii_letters, digits
-from algr.user_search import get_by_email, get_by_id
+from algr.user_search import get_by_email, get_by_id, AuthError
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
@@ -22,7 +21,7 @@ global_init('db/economy_science.db')
 login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
-address = 'https://pybank.herokuapp.com'
+address = users_resourse.address
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
 api.add_resource(news_resource.NewsListResource, '/api/v2/news')
 api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')
@@ -65,6 +64,7 @@ class MainNews:
         self.theme = news['theme']
         self.author_surname = news['author_surname']
         self.author_name = news['author_name']
+        self.author = news['author_id']
         self.id = news['id']
         self.date = news['modified_date'].split()[0]
         self.z = True
@@ -95,7 +95,11 @@ def load_user(user_id):
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        user = get_by_email(form.email.data)
+        try:
+            user = get_by_email(form.email.data)
+        except AuthError:
+            form.email.errors = ['Не найден такой пользователь']
+            return render_template('login.html', title='Вход', form=form)
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
             return redirect("/")
@@ -130,8 +134,11 @@ def reqister():
             if not ot:
                 form.email.errors.append('Email должен содержать другие символы')
             return render_template('register.html', title='Регистация', form=form)
-
-        if get_by_email(form.email.data):
+        try:
+            get_by_email(form.email.data)
+        except AuthError:
+            pass
+        else:
             form.email.errors = ["Такой пользователь уже есть"]
             return render_template('register.html', title='Регистрация',
                                    form=form)
@@ -184,6 +191,30 @@ def reqister():
     return render_template('register.html', title='Регистрация', form=form)
 
 
+@app.route('/authors/<int:ids>')
+def show_authors(ids):
+    user = get_by_id(ids)
+    if user.position != 2 and user.position != 1:
+        abort(404)
+    news = user.news
+    params = {
+        'surname': user.surname,
+        'name': user.name,
+        'age': user.age,
+        'address': user.address
+    }
+    if len(news) >= 2:
+        params['news1'] = MainNews(news[-1].id)
+        params['news2'] = MainNews(news[-2].id)
+    elif len(news) == 1:
+        params['news1'] = MainNews(news[-1].id)
+        params['news2'] = Zagl()
+    else:
+        params['news1'] = Zagl()
+        params['news2'] = Zagl()
+    return render_template('show_authors.html', **params)
+
+
 @login_required
 @app.route('/news/add_news', methods=['GET', 'POST'])
 def reg_news():
@@ -198,6 +229,7 @@ def reg_news():
                 'text': form.text.data,
                 'password': form.password.data
             }).json()
+            user = current_user
         else:
             resp = requests.post(address + '/api/v2/news', json={
                 'author': form.author.data,
@@ -207,8 +239,20 @@ def reg_news():
                 'text': form.text.data,
                 'password': form.password.data
             }).json()
+            user = get_by_email(form.author.data)
         if 'success' in resp:
-            return redirect('/')
+            p = requests.put(address + '/api/v2/users/{}'.format(user.id), json={
+                'id': user.id,
+                'name': user.name,
+                'surname': user.surname,
+                'email': user.email,
+                'position': 2,
+                'age': user.age,
+                'address': user.address,
+                'password': form.password.data
+            })
+            if 'success' in p:
+                return redirect('/')
         elif 'error' in resp:
             if resp['error'] == 'not_unique_header':
                 form.header.errors = ['Пожалуйста, выберете другой заголовок. Этот уже занят.']
@@ -232,8 +276,8 @@ def news(number):
     news = requests.get(address + '/api/v2/news').json()['news']
     max_news = len(news)
     sp = []
-    for i in range(number * 6, number * 6 + 6):
-        if i < max_news:
+    for i in range(max_news - number * 6 - 1, max_news - number * 6 - 7, -1):
+        if 0 <= i < max_news:
             sp.append(MainNews(news[i]['id']))
         else:
             break
@@ -292,15 +336,8 @@ def edit_news(id):
 @app.route('/news/delete_news/<int:id>', methods=['GET', 'POST'])
 @login_required
 def news_delete(id):
-    session = create_session()
-    news = session.query(News).filter(News.id == id).filter(
-        (News.user == current_user) | (1 == current_user.id)).first()
-    if news:
-        session.delete(news)
-        session.commit()
-    else:
-        abort(404)
-    return redirect('/')
+    if 'success' in requests.delete(address + '/api/v2/news/{}'.format(id)):
+        return redirect('/')
 
 
 @app.route('/logout')

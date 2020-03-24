@@ -30,8 +30,10 @@ class NewsResource(Resource):
         news = session.query(News).get(news_id)
         d = {'news': news.to_dict(
             only=('id', 'header', 'theme', 'modified_date'))}
-        d['news']['author_surname'] = session.query(User).get(news.author).surname
-        d['news']['author_name'] = session.query(User).get(news.author).name
+        auth = session.query(User).get(news.author)
+        d['news']['author_surname'] = auth.surname
+        d['news']['author_name'] = auth.name
+        d['news']['author_id'] = auth.id
         with open(os.path.join('news', news.text_address[0].name), encoding='utf-8') as f:
             d['news']['text'] = f.read()
         return jsonify(d)
@@ -76,12 +78,17 @@ class NewsListResource(Resource):
                 break
         if not text_address:
             return jsonify({'error': 'not_unique_header'})
-        news = News(author=args['author'], header=args['header'], theme=args['theme'])
-        news.text_address.append(Address(name=text_address))
+        s = ''
+        for i in text_address:
+            if i.isdigit() or i.isalpha():
+                s += i
+        news = News(author=user.id, header=args['header'], theme=args['theme'])
+        news.text_address.append(Address(name=s))
         user.news.append(news)
         session.merge(user)
         session.merge(news)
         session.commit()
-        with open(os.path.join('news/' + text_address), encoding='utf-8', mode='w') as text_file:
+
+        with open(os.path.join('news/' + s), encoding='utf-8', mode='w') as text_file:
             text_file.write(args['preview'] + SEPARATOR + args['text'])
         return jsonify({'success': 'OK'})

@@ -4,7 +4,8 @@
     <br>
     <div class="blog-post jumbotron">
         <h2 class="blog-post-title" align="center">{{news.header}}</h2>
-        <p class="blog-post-meta">{{news.date}} by <a href="news4.author.id">{{news.author_surname + ' ' +
+        <p class="blog-post-meta">{{news.date}} by <a href="{{address}}/authors/{{news.author}}">{{news.author_surname +
+            ' ' +
             news.author_name}}</a></p>
         <h5 align="center">{{news.theme}}</h5>
         <p>{{news.content}}</p>

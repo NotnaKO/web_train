@@ -91,7 +91,7 @@ class NewsListResource(Resource):
             return jsonify({'error': 'not_unique_header'})
         s = ''
         for i in text_address:
-            if i.isdigit() or i.isalpha():
+            if i.isdigit() or i.isalpha() or i == '.':
                 s += i
         news = News(author=user.id, header=args['header'], theme=args['theme'])
         news.text_address.append(Address(name=s))

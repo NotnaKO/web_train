@@ -1,9 +1,9 @@
 from flask import *
 from flask_restful import reqparse, abort, Resource
-from requests import post
 from .db_session import create_session
 from .users import User
-from algr.user_search import get_by_email, AuthError
+from algr.user_search import get_by_email, AuthError, get_by_id
+from algr.check import full_decode_errors, some_decode_errors, make_new_password, NotEqualError
 
 address = 'https://pybank.herokuapp.com'
 
@@ -42,22 +42,57 @@ class UserResource(Resource):
         return jsonify({'success': 'OK'})
 
     def put(self, user_id):
-        if 'success' in self.delete(user_id).json:
-            args = parser.parse_args()
+        parser.add_argument('password')
+        parser.add_argument('position', required=True)
+        parser.add_argument('old_password')
+        parser.add_argument('password_again')
+        parser.add_argument('new_password')
+        args = parser.parse_args()
+        if get_by_email(args['email']) != get_by_id(user_id):
+            return jsonify({'error': 'Bad user'})
+        if args['password']:
+            er = some_decode_errors(args)
+            if er is not True:
+                return er
+            user = get_by_email(args['email'])
+            if not user.check_password(args['password']):
+                return jsonify({'error': 'Bad password'})
+            if 'success' in self.delete(user_id).json:
+                session = create_session()
+                user = User(
+                    surname=args['surname'],
+                    name=args['name'],
+                    age=args['age'],
+                    email=args['email'],
+                    address=args['address'],
+                    position=args['position'],
+                    id=user_id
+                )
+                user.set_password(args['password'])
+                session.add(user)
+                session.commit()
+                if not any([args['old_password'], args['new_password'], args['password_again']]):
+                    return jsonify({'success': 'OK'})
+        if args['old_password'] and args['new_password'] and args['password_again']:
+            try:
+                a = make_new_password(args['old_password'], args['new_password'], args['password_again'],
+                                      user=get_by_email(args['email']))
+                if a is not True:
+                    return a
+            except AuthError:
+                return jsonify({'error': 'Bad old password'})
+            except NotEqualError:
+                return jsonify({'error': 'Not equal new and again'})
             session = create_session()
-            user = User(
-                surname=args['surname'],
-                name=args['name'],
-                age=args['age'],
-                email=args['email'],
-                address=args['address'],
-                position=args['position'],
-                id=user_id
-            )
-            user.set_password(args['password'])
-            session.add(user)
+            user = get_by_id(user_id)
+            user.set_password(args['new_password'])
+            session.merge(user)
             session.commit()
             return jsonify({'success': 'OK'})
+        if (any([args['old_password'], args['new_password'], args['password_again']]) and args['password']) and not all(
+                [args['old_password'], args['new_password'], args['password_again']]):
+            return jsonify({'error': 'Not all new password'})
+        return jsonify({'error': 'Empty passwords'})
 
 
 parser = reqparse.RequestParser()
@@ -66,8 +101,6 @@ parser.add_argument('name', required=True)
 parser.add_argument('age', required=True, type=int)
 parser.add_argument('email', required=True)
 parser.add_argument('address', required=True)
-parser.add_argument('password', required=True)
-parser.add_argument('position', type=int, default=3)
 
 
 class UserListResource(Resource):
@@ -78,7 +111,13 @@ class UserListResource(Resource):
             only=('id', 'surname', 'name')) for item in user]})
 
     def post(self):
+        parser.add_argument('password', required=True)
+        parser.add_argument('position', type=int, default=3)
         args = parser.parse_args()
+        # email check
+        er = full_decode_errors(args)
+        if er is not True:
+            return er
         session = create_session()
         user = User(
             surname=args['surname'],

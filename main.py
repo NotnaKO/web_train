@@ -7,12 +7,10 @@ from wtforms import *
 from wtforms.fields.html5 import EmailField
 from wtforms.validators import *
 from data import users_resourse, news_resource
-from data.news import News, SEPARATOR
+from data.news import News
 from data.db_session import create_session
 from data.db_session import global_init
-from algr.check_passwords import hard_check_password, LengthError, LetterError, SequenceError, DigitError, \
-    LanguageError, PasswordError
-from string import printable, ascii_letters, digits
+from algr.get_something import get_params_to_show_user, MainNews, Zagl
 from algr.user_search import get_by_email, get_by_id, AuthError
 
 app = Flask(__name__)
@@ -22,6 +20,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
 address = users_resourse.address
+address = 'http://127.0.0.1:5000'
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
 api.add_resource(news_resource.NewsListResource, '/api/v2/news')
 api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')
@@ -46,7 +45,7 @@ class NewsForm(FlaskForm):
     preview = TextAreaField('Описание новости', validators=[DataRequired()])
     text = TextAreaField('Текст новости', validators=[DataRequired()])
     password = PasswordField('Пароль', validators=[DataRequired()])
-    submit = SubmitField('Submit')
+    submit = SubmitField('Добавить')
 
 
 class LoginForm(FlaskForm):
@@ -56,29 +55,13 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Войти')
 
 
-class MainNews:
-    def __init__(self, idi: int):
-        news = requests.get(address + f'/api/v2/news/{idi}').json()['news']
-        self.header = news['header']
-        self.preview, self.content = news['text'].split(SEPARATOR)
-        self.theme = news['theme']
-        self.author_surname = news['author_surname']
-        self.author_name = news['author_name']
-        self.author = news['author_id']
-        self.id = news['id']
-        self.date = news['modified_date'].split()[0]
-        self.z = True
-
-
-class Zagl:
-    def __init__(self):
-        self.header = ''
-        self.preview, self.content = '', ''
-        self.theme = ''
-        self.author_surname = ''
-        self.author_name = ''
-        self.date = ''
-        self.z = False
+class UserForm(RegisterForm):
+    new_password = PasswordField('Новый пароль')
+    email = EmailField('Email')
+    submit = submit2 = SubmitField('Сохранить')
+    old_password = PasswordField('Старый пароль')
+    password = PasswordField('Ваш пароль')
+    password_again = PasswordField('Повторите пароль')
 
 
 class Page:
@@ -113,66 +96,9 @@ def login():
 def reqister():
     form = RegisterForm()
     if form.validate_on_submit():
-        # email check
-        s = set(form.email.data)
-        if not (s <= set(printable)):
-            form.email.errors = ['Email может состоять из английских букв, цифр и других символов']
-            return render_template('register.html', title='Регистрация',
-                                   form=form)
-        le, ot = False, False
-        for i in s:
-            if i in ascii_letters:
-                le = True
-            if i in printable and i not in digits and i not in ascii_letters:
-                ot = True
-            if le and ot:
-                break
-        if not le or not ot:
-            form.email.errors = []
-            if not le:
-                form.email.errors.append('Email должен содержать английские буквы')
-            if not ot:
-                form.email.errors.append('Email должен содержать другие символы')
-            return render_template('register.html', title='Регистация', form=form)
-        try:
-            get_by_email(form.email.data)
-        except AuthError:
-            pass
-        else:
-            form.email.errors = ["Такой пользователь уже есть"]
-            return render_template('register.html', title='Регистрация',
-                                   form=form)
-        # password check
+        # password  similar check
         if form.password.data != form.password_again.data:
             form.password.errors = ["Пароли не совпадают"]
-            return render_template('register.html', title='Регистрация',
-                                   form=form)
-        try:
-            le = hard_check_password(form.password.data)
-            if le != 'ok':
-                raise PasswordError
-        except PasswordError as e:
-            if type(e) == LetterError:
-                form.password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
-            elif type(e) == LengthError:
-                form.password.errors = ['В пароле должно быть 8 и больше символов.']
-            elif type(e) == LanguageError:
-                form.password.errors = ['В пароле должныть только буквы английского языка, цифры и другие символы.']
-            elif type(e) == DigitError:
-                form.password.errors = ['В пароле должны быть цифры.']
-            elif type(e) == SequenceError:
-                form.password.errors = ['В пароле не должно быть трёх символов, идущих подряд на клавиатуре.']
-            else:
-                form.password.errors = ['Ошибка в пароле.']
-            return render_template('register.html', title='Регистрация', form=form)
-        # age check
-        try:
-            if int(form.age.data) < 6:
-                form.age.errors = ["Возраст должен быть не менбше 6"]
-                return render_template('register.html', title='Регистрация',
-                                       form=form)
-        except BaseException:
-            form.age.errors = ['Неправильный формат возраста']
             return render_template('register.html', title='Регистрация',
                                    form=form)
         resp = requests.post(address + '/api/v2/users', json={
@@ -186,33 +112,143 @@ def reqister():
         if 'success' in resp.json():
             return redirect('/login')
         else:
-            return render_template('register.html', title='Регистрация',
-                                   form=form, message='Произошла ошибка. Проверьте данные ещё раз.')
+            resp_js = resp.json()
+            er = True
+            # email
+            if resp_js['error'] == 'EmailLetterError':
+                form.email.errors = ['Email может состоять из английских букв, цифр и других символов']
+            elif resp_js['error'] == 'EnglishError':
+                form.email.errors = ['Email должен содержать английские буквы']
+            elif resp_js['error'] == 'OthersLettersError':
+                form.email.errors = ['Email должен содержать другие символы']
+            elif resp_js['error'] == 'SimilarUserError':
+                form.email.errors = ["Такой пользователь уже есть"]
+            # password
+            elif resp_js['error'] == 'PasswordLetterError':
+                form.password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
+            elif resp_js['error'] == 'LengthError':
+                form.password.errors = ['В пароле должно быть 8 и больше символов.']
+            elif resp_js['error'] == 'LanguageError':
+                form.password.errors = ['В пароле должныть только буквы английского языка, цифры и другие символы.']
+            elif resp_js['error'] == 'DigitError':
+                form.password.errors = ['В пароле должны быть цифры.']
+            elif resp_js['error'] == 'SequenceError':
+                form.password.errors = ['В пароле не должно быть трёх символов, идущих подряд на клавиатуре.']
+            # age
+            elif resp_js['error'] == 'AgeRangeError' or resp_js['error'] == 'ValueAgeError':
+                form.age.errors = ['Возраст должен быть натуральным числом от 6 до 110']
+            else:
+                er = False
+            if er:
+                return render_template('register.html', title='Регистрация',
+                                       form=form)
+            else:
+                return render_template('register.html', title='Регистрация',
+                                       form=form, message='Произошла ошибка. Проверьте данные ещё раз.')
     return render_template('register.html', title='Регистрация', form=form)
 
 
-@app.route('/authors/<int:ids>')
+@app.route('/users/<int:ids>', methods=['GET', 'POST'])
 def show_authors(ids):
+    form = UserForm()
     user = get_by_id(ids)
-    if user.position != 2 and user.position != 1:
-        abort(404)
-    news = user.news
-    params = {
-        'surname': user.surname,
-        'name': user.name,
-        'age': user.age,
-        'address': user.address
-    }
-    if len(news) >= 2:
-        params['news1'] = MainNews(news[-1].id)
-        params['news2'] = MainNews(news[-2].id)
-    elif len(news) == 1:
-        params['news1'] = MainNews(news[-1].id)
-        params['news2'] = Zagl()
+    if form.validate_on_submit():
+        user = get_by_id(ids)
+        resp = requests.put(address + f'/api/v2/users/{ids}', json={
+            'name': form.name.data,
+            'surname': form.surname.data,
+            'age': form.age.data,
+            'address': form.address.data,
+            'email': user.email,
+            'password': form.password.data,
+            'new_password': form.new_password.data,
+            'old_password': form.old_password.data,
+            'password_again': form.password_again.data,
+            'position': user.position
+        })
+        if 'success' in resp.json():
+            user = get_by_id(ids)
+            params = get_params_to_show_user(user, current_user, form)
+            if form.password.data and not all([form.old_password.data, form.new_password.data, form.password_again]):
+                return render_template('show_users.html', success_load_data=True, **params)
+            if all([form.old_password.data, form.new_password.data, form.password_again]) and not form.password.data:
+                return render_template('show_users.html', success_set_password=True, **params)
+            if all([form.old_password.data, form.new_password.data, form.password_again]) and form.password.data:
+                return render_template('show_users.html', success_set_password=True, success_load_data=True, **params)
+        else:
+            user = get_by_id(ids)
+            resp_js = resp.json()
+            er = True
+            # email
+            if resp_js['error'] == 'EmailLetterError':
+                form.email.errors = ['Email может состоять из английских букв, цифр и других символов']
+            elif resp_js['error'] == 'EnglishError':
+                form.email.errors = ['Email должен содержать английские буквы']
+            elif resp_js['error'] == 'OthersLettersError':
+                form.email.errors = ['Email должен содержать другие символы']
+            elif resp_js['error'] == 'SimilarUserError':
+                form.email.errors = ["Такой пользователь уже есть"]
+            # password
+            elif resp_js['error'] == 'PasswordLetterError':
+                if form.password.data:
+                    form.password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
+                if form.new_password.data:
+                    form.new_password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
+            elif resp_js['error'] == 'LengthError':
+                if form.password.data:
+                    form.password.errors = ['В пароле должно быть 8 и больше символов.']
+                if form.new_password.data:
+                    form.new_password.errors = ['В пароле должно быть 8 и больше символов.']
+            elif resp_js['error'] == 'LanguageError':
+                if form.password.data:
+                    form.password.errors = ['В пароле должныть только буквы английского языка, цифры и другие символы.']
+                if form.new_password.data:
+                    form.new_password.errors = [
+                        'В пароле должныть только буквы английского языка, цифры и другие символы.']
+            elif resp_js['error'] == 'DigitError':
+                if form.password.data:
+                    form.password.errors = ['В пароле должны быть цифры.']
+                if form.new_password.data:
+                    form.new_password.errors = ['В пароле должны быть цифры.']
+            elif resp_js['error'] == 'SequenceError':
+                if form.password.data:
+                    form.password.errors = ['В пароле не должно быть трёх символов, идущих подряд на клавиатуре.']
+                if form.new_password.data:
+                    form.new_password.errors = ['В пароле не должно быть трёх символов, идущих подряд на клавиатуре.']
+            # age
+            elif resp_js['error'] == 'AgeRangeError' or resp_js['error'] == 'ValueAgeError':
+                form.age.errors = ['Возраст должен быть натуральным числом от 6 до 110.']
+            elif resp_js['error'] == 'Bad user':
+                form.password.errors = ['Ошибка пользователя. Попробуйте выйти и зайти снова.']
+            elif resp_js['error'] == 'Bad password':
+                form.password.errors = ['Ошибка пользователя. Пожалуйста, введите правильный пароль.']
+            elif resp_js['error'] == 'Not equal new and again':
+                form.password_again.errors = ['Пароли не совпадают']
+            elif resp_js['error'] == 'Bad old password':
+                form.old_password.errors = ['Ошибка пользователя. Пожалуйста, введите правильный пароль.']
+            elif resp_js['error'] == 'Not all new password':
+                form.old_password.errors = ['Пожалуйста, заполните все поля паролей перед сменой.']
+            elif resp_js['error'] == 'Empty passwords':
+                form.password.errors = ['Пожалуйста, заполните это поле, если хотите изменить свои данные']
+                form.old_password.errors = ['Пожалуйста, заполните это поле, если сменить пароль']
+            else:
+                er = False
+            params = get_params_to_show_user(user, current_user, form)
+            if er:
+                return render_template('show_users.html', **params)
+            else:
+                return render_template('show_users.html', **params,
+                                       message='Произошла ошибка. Проверьте данные ещё раз.')
     else:
-        params['news1'] = Zagl()
-        params['news2'] = Zagl()
-    return render_template('show_authors.html', **params)
+        user = get_by_id(ids)
+        if not current_user.is_authenticated and (user.position != 2 and user.position != 1):
+            abort(404)
+        if current_user.is_authenticated:
+            if not (user.position == 2 or (user.position == 3 and user.id == current_user.id) or (
+                    current_user.position == 1)):
+                abort(404)
+        params = get_params_to_show_user(user, current_user, form)
+        return render_template('show_users.html', **params)
 
 
 @login_required

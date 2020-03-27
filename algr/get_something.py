@@ -1,0 +1,56 @@
+import requests
+from data.users_resourse import address
+from data.news import SEPARATOR
+
+
+class MainNews:
+    def __init__(self, idi: int):
+        news = requests.get(address + f'/api/v2/news/{idi}').json()['news']
+        self.header = news['header']
+        self.preview, self.content = news['text'].split(SEPARATOR)
+        self.theme = news['theme']
+        self.author_surname = news['author_surname']
+        self.author_name = news['author_name']
+        self.author = news['author_id']
+        self.id = news['id']
+        self.date = news['modified_date'].split()[0]
+        self.z = True
+
+
+class Zagl:
+    def __init__(self):
+        self.header = ''
+        self.preview, self.content = '', ''
+        self.theme = ''
+        self.author_surname = ''
+        self.author_name = ''
+        self.date = ''
+        self.z = False
+
+
+def get_params_to_show_user(user, current_user, form, message=''):
+    news = []
+    if user.position != 3:
+        news = user.news
+    params = {
+        'title': user.surname + ' ' + user.name,
+        'surname': form.surname.data if form.surname.data else user.surname,
+        'name': form.name.data if form.name.data else user.name,
+        'age': form.age.data if form.age.data else user.age,
+        'address': form.address.data if form.address.data else user.address,
+        'id': user.id,
+        'current_id': current_user.id if current_user.is_authenticated else -1,
+        'status': 'Автор' if user.position != 3 else 'Пользователь',
+        'form': form,
+        'message': message
+    }
+    if len(news) >= 2:
+        params['news1'] = MainNews(news[-1].id)
+        params['news2'] = MainNews(news[-2].id)
+    elif len(news) == 1:
+        params['news1'] = MainNews(news[-1].id)
+        params['news2'] = Zagl()
+    else:
+        params['news1'] = Zagl()
+        params['news2'] = Zagl()
+    return params

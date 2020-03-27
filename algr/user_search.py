@@ -1,6 +1,3 @@
-from flask_restful import abort
-from flask import jsonify
-
 from data.db_session import create_session
 from data.users import User
 

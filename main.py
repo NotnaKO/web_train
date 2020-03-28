@@ -1,5 +1,5 @@
 import requests
-from flask import Flask, render_template, redirect, request, abort
+from flask import Flask, render_template, redirect, request, abort, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_restful import Api
 from flask_wtf import *
@@ -20,7 +20,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
 address = users_resourse.address
-address = 'http://127.0.0.1:5000'
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
 api.add_resource(news_resource.NewsListResource, '/api/v2/news')
 api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')
@@ -149,7 +148,7 @@ def reqister():
 
 
 @app.route('/users/<int:ids>', methods=['GET', 'POST'])
-def show_authors(ids):
+def show_users_data(ids):
     form = UserForm()
     user = get_by_id(ids)
     if form.validate_on_submit():
@@ -251,6 +250,16 @@ def show_authors(ids):
         return render_template('show_users.html', **params)
 
 
+@app.route('/news/news_by_author/<int:ids>/page/<int:number>')
+def show_news_by_author(ids, number):
+    user = get_by_id(ids)
+    if user.position == 3:
+        abort(404)
+    else:
+        return news_page(news_resp=jsonify({'news': [item.to_dict(
+            only=('id', 'header')) for item in user.news]}), by_author=True, number=number)
+
+
 @login_required
 @app.route('/news/add_news', methods=['GET', 'POST'])
 def reg_news():
@@ -308,11 +317,16 @@ def abort_if_page_not_found(page_id):
 
 
 @app.route('/news/page/<int:number>')
-def news(number):
-    news = requests.get(address + '/api/v2/news').json()['news']
+def news_page(number=0, news_resp=None, by_author=False):
+    if news_resp is None:
+        news = requests.get(address + '/api/v2/news').json()['news']
+    else:
+        news = news_resp.json['news']
     max_news = len(news)
+    if max_news == 0:
+        abort(404)
     sp = []
-    for i in range(max_news - number * 6 - 1, max_news - number * 6 - 7, -1):
+    for i in range(max_news - number * 6 - 1, max_news - number * 6 - 7 if max_news - number * 6 - 7 >= 0 else -1, -1):
         if 0 <= i < max_news:
             sp.append(MainNews(news[i]['id']))
         else:
@@ -327,7 +341,8 @@ def news(number):
         'news5': sp[4] if len(sp) > 4 else Zagl(),
         'news6': sp[5] if len(sp) > 5 else Zagl(),
         'page': Page(number),
-        'max_page_id': max_news // 6}
+        'max_page_id': max_news // 6,
+        'by_author': by_author}
     return render_template('news_page.html', **params)
 
 

@@ -5,7 +5,9 @@ from .users import User
 from algr.user_search import get_by_email, AuthError, get_by_id
 from algr.check import full_decode_errors, some_decode_errors, make_new_password, NotEqualError
 from .news import News
-address = 'https://pybank.herokuapp.com'
+
+# address = 'https://pybank.herokuapp.com'
+address = 'http://127.0.0.1:5000'
 
 
 def abort_if_user_not_found(user_id):

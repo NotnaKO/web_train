@@ -4,7 +4,7 @@ from .db_session import create_session
 from .users import User
 from algr.user_search import get_by_email, AuthError, get_by_id
 from algr.check import full_decode_errors, some_decode_errors, make_new_password, NotEqualError
-
+from .news import News
 address = 'https://pybank.herokuapp.com'
 
 
@@ -55,6 +55,7 @@ class UserResource(Resource):
             if er is not True:
                 return er
             user = get_by_email(args['email'])
+            news = user.news
             if not user.check_password(args['password']):
                 return jsonify({'error': 'Bad password'})
             if 'success' in self.delete(user_id).json:
@@ -68,8 +69,12 @@ class UserResource(Resource):
                     position=args['position'],
                     id=user_id
                 )
-                user.set_password(args['password'])
                 session.add(user)
+                user.set_password(args['password'])
+                for n in news:
+                    news = session.query(News).get(n.id)
+                    user.news.append(news)
+                session.merge(user)
                 session.commit()
                 if not any([args['old_password'], args['new_password'], args['password_again']]):
                     return jsonify({'success': 'OK'})

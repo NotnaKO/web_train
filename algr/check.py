@@ -1,5 +1,5 @@
 from string import printable, ascii_letters, digits
-from .user_search import get_by_email, AuthError
+from .user_alg import get_user_by_email, AuthError
 from flask import jsonify
 
 
@@ -105,7 +105,7 @@ def check_email(email):
         if not ot:
             raise OthersLettersError
     try:
-        get_by_email(email)
+        get_user_by_email(email)
     except AuthError:
         pass
     else:

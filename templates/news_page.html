@@ -71,12 +71,22 @@
             {% endif %}
             <nav class="blog-pagination">
                 {% if page.id >= 1 %}
+                {% if not by_author %}
                 <a class="btn btn-outline-primary" href="/news/page/{{page.id - 1}}">{{page.id}}</a>
+                {% else %}
+                <a class="btn btn-outline-primary"
+                   href="/news/news_by_author/{{main_news.author}}/page/{{page.id - 1}}">{{page.id}}</a>
+                {% endif %}
                 {% endif %}
                 <a class="btn btn-outline-secondary disabled" href="#" tabindex="-2"
                    aria-disabled="true">{{page.id + 1}}</a>
                 {% if page.id < max_page_id %}
+                {% if not by_author %}
                 <a class="btn btn-outline-primary" href="/news/page/{{page.id + 1}}" tabindex="-1">{{page.id + 2}}</a>
+                {% else %}
+                <a class="btn btn-outline-primary"
+                   href="/news/news_by_author/{{main_news.author}}/page/{{page.id + 1}}">{{page.id + 2}}</a>
+                {% endif %}
                 {% endif %}
             </nav>
         </div><!-- /.blog-main -->

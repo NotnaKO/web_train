@@ -1,5 +1,5 @@
 import requests
-from flask import Flask, render_template, redirect, request, abort
+from flask import Flask, render_template, redirect, request, abort, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_restful import Api
 from flask_wtf import *
@@ -10,8 +10,8 @@ from data import users_resourse, news_resource
 from data.news import News
 from data.db_session import create_session
 from data.db_session import global_init
-from algr.get_something import get_params_to_show_user, MainNews, Zagl
-from algr.user_search import get_by_email, get_by_id, AuthError
+from algr.user_alg import get_params_to_show_user, MainNews, Zagl, get_user_by_email, get_user_by_id, AuthError
+from algr.news_alg import get_news_by_id, get_preview_and_text
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
@@ -20,7 +20,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
 address = users_resourse.address
-address = 'http://127.0.0.1:5000'
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
 api.add_resource(news_resource.NewsListResource, '/api/v2/news')
 api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')
@@ -64,6 +63,10 @@ class UserForm(RegisterForm):
     password_again = PasswordField('Повторите пароль')
 
 
+class EditNewsForm(NewsForm):
+    submit = SubmitField('Сохранить')
+
+
 class Page:
     def __init__(self, i: int):
         self.id = i
@@ -71,7 +74,7 @@ class Page:
 
 @login_manager.user_loader
 def load_user(user_id):
-    return get_by_id(user_id)
+    return get_user_by_id(user_id)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -79,7 +82,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         try:
-            user = get_by_email(form.email.data)
+            user = get_user_by_email(form.email.data)
         except AuthError:
             form.email.errors = ['Не найден такой пользователь']
             return render_template('login.html', title='Вход', form=form)
@@ -149,11 +152,10 @@ def reqister():
 
 
 @app.route('/users/<int:ids>', methods=['GET', 'POST'])
-def show_authors(ids):
+def show_users_data(ids):
     form = UserForm()
-    user = get_by_id(ids)
     if form.validate_on_submit():
-        user = get_by_id(ids)
+        user = get_user_by_id(ids)
         resp = requests.put(address + f'/api/v2/users/{ids}', json={
             'name': form.name.data,
             'surname': form.surname.data,
@@ -167,7 +169,7 @@ def show_authors(ids):
             'position': user.position
         })
         if 'success' in resp.json():
-            user = get_by_id(ids)
+            user = get_user_by_id(ids)
             params = get_params_to_show_user(user, current_user, form)
             if form.password.data and not all([form.old_password.data, form.new_password.data, form.password_again]):
                 return render_template('show_users.html', success_load_data=True, **params)
@@ -176,7 +178,7 @@ def show_authors(ids):
             if all([form.old_password.data, form.new_password.data, form.password_again]) and form.password.data:
                 return render_template('show_users.html', success_set_password=True, success_load_data=True, **params)
         else:
-            user = get_by_id(ids)
+            user = get_user_by_id(ids)
             resp_js = resp.json()
             er = True
             # email
@@ -240,7 +242,7 @@ def show_authors(ids):
                 return render_template('show_users.html', **params,
                                        message='Произошла ошибка. Проверьте данные ещё раз.')
     else:
-        user = get_by_id(ids)
+        user = get_user_by_id(ids)
         if not current_user.is_authenticated and (user.position != 2 and user.position != 1):
             abort(404)
         if current_user.is_authenticated:
@@ -249,6 +251,16 @@ def show_authors(ids):
                 abort(404)
         params = get_params_to_show_user(user, current_user, form)
         return render_template('show_users.html', **params)
+
+
+@app.route('/news/news_by_author/<int:ids>/page/<int:number>')
+def show_news_by_author(ids, number):
+    user = get_user_by_id(ids)
+    if user.position == 3:
+        abort(404)
+    else:
+        return news_page(news_resp=jsonify({'news': [item.to_dict(
+            only=('id', 'header')) for item in user.news]}), by_author=True, number=number)
 
 
 @login_required
@@ -275,8 +287,8 @@ def reg_news():
                 'text': form.text.data,
                 'password': form.password.data
             }).json()
-            user = get_by_email(form.author.data)
-        if 'success' in resp:
+            user = get_user_by_email(form.author.data)
+        if 'success' in resp and user.position == 3:
             p = requests.put(address + '/api/v2/users/{}'.format(user.id), json={
                 'id': user.id,
                 'name': user.name,
@@ -287,20 +299,25 @@ def reg_news():
                 'address': user.address,
                 'password': form.password.data
             })
-            if 'success' in p:
-                return redirect('/')
+            if 'success' in p.json():
+                return redirect('/news')
         elif 'error' in resp:
             if resp['error'] == 'not_unique_header':
                 form.header.errors = ['Пожалуйста, выберете другой заголовок. Этот уже занят.']
             if resp['error'] == 'Bad user':
                 form.password.errors = ['Неверный пароль.']
+        elif 'success' in resp and user.position != 3:
+            return redirect('/news')
+        else:
+            return render_template('add_news.html', title='Добавление новости', form=form, current_user=current_user,
+                                   message='Произошла непредвиденная ошибка, пожалуйста попробуйте позже.')
     return render_template('add_news.html', title='Добавление новости', form=form, current_user=current_user)
 
 
 @app.route('/news/<int:number>')
 def show_news(number):
     news = MainNews(number)
-    return render_template('show_news.html', news=news)
+    return render_template('show_news.html', news=news, title='Новости')
 
 
 def abort_if_page_not_found(page_id):
@@ -308,11 +325,16 @@ def abort_if_page_not_found(page_id):
 
 
 @app.route('/news/page/<int:number>')
-def news(number):
-    news = requests.get(address + '/api/v2/news').json()['news']
+def news_page(number=0, news_resp=None, by_author=False, title='Главная'):
+    if news_resp is None:
+        news = requests.get(address + '/api/v2/news').json()['news']
+    else:
+        news = news_resp.json['news']
     max_news = len(news)
+    if max_news == 0:
+        abort(404)
     sp = []
-    for i in range(max_news - number * 6 - 1, max_news - number * 6 - 7, -1):
+    for i in range(max_news - number * 6 - 1, max_news - number * 6 - 7 if max_news - number * 6 - 7 >= 0 else -1, -1):
         if 0 <= i < max_news:
             sp.append(MainNews(news[i]['id']))
         else:
@@ -327,53 +349,56 @@ def news(number):
         'news5': sp[4] if len(sp) > 4 else Zagl(),
         'news6': sp[5] if len(sp) > 5 else Zagl(),
         'page': Page(number),
-        'max_page_id': max_news // 6}
+        'max_page_id': max_news // 6 - 1 if max_news % 6 == 0 else max_news // 6,
+        'by_author': by_author,
+        'title': title}
     return render_template('news_page.html', **params)
 
 
 @app.route('/')  # Пока просто заглушка для удобства тестирования
 def main():
-    return render_template('base.html', title='Главная страница')
+    return news_page()
 
 
-@app.route('/news/edit_news/<int:id>', methods=['GET', 'POST'])
+@app.route('/news/edit_news/<int:ids>', methods=['GET', 'POST'])
 @login_required
-def edit_news(id):
-    form = NewsForm()
+def edit_news(ids):
+    form = EditNewsForm()
     if request.method == "GET":
-        session = create_session()
-        news = session.query(News).filter(News.id == id).filter(
-            (News.user == current_user) | (1 == current_user.id)).first()
-        if news:
-            form.news.data = news.news
-            form.team_leader.data = news.team_leader
-            form.work_size.data = news.work_size
-            form.collaborators.data = news.collaborators
-            form.is_finished.data = news.is_finished
+        news = get_news_by_id(ids)
+        if news.user == current_user or current_user.position == 1:
+            form.header.data = news.header
+            form.theme.data = news.theme
+            form.preview.data, form.text.data = get_preview_and_text(news.text_address)
         else:
             abort(404)
     if form.validate_on_submit():
-        session = create_session()
-        news = session.query(News).filter(News.id == id).filter(
-            (News.user == current_user) | (1 == current_user.id)).first()
-        if news:
-            news.is_finished = form.is_finished.data
-            news.collaborators = form.collaborators.data
-            news.work_size = form.work_size.data
-            news.team_leader = form.team_leader.data
-            news.news = form.news.data
-            session.commit()
-            return redirect('/')
+        resp = requests.put(address + f'/api/v2/news/{ids}', json={
+            'password': form.password.data,
+            'author': current_user.email,
+            'theme': form.theme.data,
+            'preview': form.preview.data,
+            'text': form.text.data,
+            'header': form.header.data
+        })
+        resp_js = resp.json()
+        if 'success' in resp_js:
+            return redirect('/news')
+        elif resp_js['error'] == 'Bad user':
+            form.password.errors = ['Неверный пароль. Попробуйте ещё раз.']
+        elif resp_js['error'] == 'not unique header':
+            form.header.errors = ['Уже есть много статей с таким заголовком, пожалуйста выбирете другой.']
         else:
-            abort(404)
-    return render_template('add_news.html', title='Edit news', form=form)
+            return render_template('add_news.html', title='Редактирование новости', form=form,
+                                   message='Произошла непредвиденная ошибка, пожалуйста попробуйте позже.')
+    return render_template('add_news.html', title='Редактирование новости', form=form)
 
 
 @app.route('/news/delete_news/<int:id>', methods=['GET', 'POST'])
 @login_required
-def news_delete(id):
-    if 'success' in requests.delete(address + '/api/v2/news/{}'.format(id)):
-        return redirect('/')
+def news_delete(ids):
+    if 'success' in requests.delete(address + '/api/v2/news/{}'.format(ids)):
+        return redirect('/news')
 
 
 @app.route('/logout')

@@ -1,6 +1,18 @@
+from data.db_session import create_session
+from data.users import User
 import requests
-from data.users_resourse import address
 from data.news import SEPARATOR
+
+# address = 'https://pybank.herokuapp.com'
+address = 'http://127.0.0.1:5000'
+
+
+def check_user(use, pas):
+    if type(use) != User:
+        return False
+    if use.check_password(pas):
+        return True
+    return False
 
 
 class MainNews:
@@ -26,6 +38,23 @@ class Zagl:
         self.author_name = ''
         self.date = ''
         self.z = False
+
+
+class AuthError(Exception):
+    pass
+
+
+def get_user_by_email(user_email):
+    session = create_session()
+    user = session.query(User).filter(User.email == user_email).first()
+    if not user:
+        raise AuthError
+    return user
+
+
+def get_user_by_id(ids):
+    session = create_session()
+    return session.query(User).get(ids)
 
 
 def get_params_to_show_user(user, current_user, form, message=''):

@@ -2,12 +2,9 @@ from flask import *
 from flask_restful import reqparse, abort, Resource
 from .db_session import create_session
 from .users import User
-from algr.user_search import get_by_email, AuthError, get_by_id
+from algr.user_alg import get_user_by_email, AuthError, get_user_by_id, address
 from algr.check import full_decode_errors, some_decode_errors, make_new_password, NotEqualError
 from .news import News
-
-# address = 'https://pybank.herokuapp.com'
-address = 'http://127.0.0.1:5000'
 
 
 def abort_if_user_not_found(user_id):
@@ -31,7 +28,7 @@ class UserResource(Resource):
         parser.add_argument('password', required=True)
         args = parser.parse_args()
         try:
-            user = get_by_email(args['email'])
+            user = get_user_by_email(args['email'])
         except AuthError:
             return jsonify({'error': 'Bad user'})
         if not user.check_password(args['password']):
@@ -50,13 +47,13 @@ class UserResource(Resource):
         parser.add_argument('password_again')
         parser.add_argument('new_password')
         args = parser.parse_args()
-        if get_by_email(args['email']) != get_by_id(user_id):
+        if get_user_by_email(args['email']) != get_user_by_id(user_id):
             return jsonify({'error': 'Bad user'})
         if args['password']:
             er = some_decode_errors(args)
             if er is not True:
                 return er
-            user = get_by_email(args['email'])
+            user = get_user_by_email(args['email'])
             news = user.news
             if not user.check_password(args['password']):
                 return jsonify({'error': 'Bad password'})
@@ -83,7 +80,7 @@ class UserResource(Resource):
         if args['old_password'] and args['new_password'] and args['password_again']:
             try:
                 a = make_new_password(args['old_password'], args['new_password'], args['password_again'],
-                                      user=get_by_email(args['email']))
+                                      user=get_user_by_email(args['email']))
                 if a is not True:
                     return a
             except AuthError:
@@ -91,7 +88,7 @@ class UserResource(Resource):
             except NotEqualError:
                 return jsonify({'error': 'Not equal new and again'})
             session = create_session()
-            user = get_by_id(user_id)
+            user = get_user_by_id(user_id)
             user.set_password(args['new_password'])
             session.merge(user)
             session.commit()

@@ -20,7 +20,8 @@ class MainNews:
         news = requests.get(address + f'/api/v2/news/{idi}').json()['news']
         self.header = news['header']
         self.preview, self.content = news['text'].split(SEPARATOR)
-        self.theme = news['theme']
+        self.politic, self.technology, self.health = news['politic'] if 'politic' in news else False, news[
+            'technology'] if 'technology' in news else False, news['health'] if 'health' in news else False
         self.author_surname = news['author_surname']
         self.author_name = news['author_name']
         self.author = news['author_id']
@@ -33,7 +34,7 @@ class Zagl:
     def __init__(self):
         self.header = ''
         self.preview, self.content = '', ''
-        self.theme = ''
+        self.politic, self.technology, self.health = False, False, False
         self.author_surname = ''
         self.author_name = ''
         self.date = ''

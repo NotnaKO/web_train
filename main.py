@@ -9,7 +9,7 @@ from wtforms.validators import *
 from data import users_resourse, news_resource
 from data.db_session import global_init
 from algr.user_alg import get_params_to_show_user, MainNews, Zagl, get_user_by_email, get_user_by_id, AuthError
-from algr.news_alg import get_news_by_id, get_preview_and_text
+from algr.news_alg import get_news_by_id, get_preview_and_text, get_string_list_by_data, EmptyParamsError
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
@@ -25,7 +25,7 @@ api.add_resource(news_resource.NewsResource, '/api/v2/news/<int:news_id>')
 
 
 class RegisterForm(FlaskForm):
-    email = EmailField('Email', validators=[DataRequired()])
+    email = EmailField('Email', validators=[Email()])
     password = PasswordField('Пароль', validators=[DataRequired()])
     password_again = PasswordField('Повторите пароль', validators=[DataRequired()])
     surname = StringField('Фамилия', validators=[DataRequired()])
@@ -38,7 +38,9 @@ class RegisterForm(FlaskForm):
 class NewsForm(FlaskForm):
     author = StringField('Ваше логин')
     header = StringField('Заголовок новости', validators=[DataRequired()])
-    theme = StringField('Тема новости', validators=[DataRequired()])
+    politic = BooleanField('Политика')
+    technology = BooleanField('Технологии')
+    health = BooleanField('Здоровье')
     preview = TextAreaField('Описание новости', validators=[DataRequired()])
     text = TextAreaField('Текст новости', validators=[DataRequired()])
     password = PasswordField('Пароль', validators=[DataRequired()])
@@ -46,7 +48,7 @@ class NewsForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    email = EmailField('Логин', validators=[DataRequired()])
+    email = EmailField('Логин', validators=[Email()])
     password = PasswordField('Пароль', validators=[DataRequired()])
     remember_me = BooleanField('Запомнить меня')
     submit = SubmitField('Войти')
@@ -263,14 +265,19 @@ def show_news_by_author(ids, number):
 
 @login_required
 @app.route('/news/add_news', methods=['GET', 'POST'])
-def reg_news():
+def add_news():
     form = NewsForm()
     if form.validate_on_submit():
+        try:
+            cat_str_list = get_string_list_by_data(form.politic.data, form.technology.data, form.health.data)
+        except EmptyParamsError:
+            return render_template('add_news.html', title='Добавление новости', form=form, current_user=current_user,
+                                   message="Пожалуйста, выберете категорию новости.")
         if current_user.is_authenticated:
             resp = requests.post(address + '/api/v2/news', json={
                 'author': current_user.email,
                 'header': form.header.data,
-                'theme': form.theme.data,
+                'category_string_list': cat_str_list,
                 'preview': form.preview.data,
                 'text': form.text.data,
                 'password': form.password.data
@@ -280,7 +287,7 @@ def reg_news():
             resp = requests.post(address + '/api/v2/news', json={
                 'author': form.author.data,
                 'header': form.header.data,
-                'theme': form.theme.data,
+                'category_string_list': cat_str_list,
                 'preview': form.preview.data,
                 'text': form.text.data,
                 'password': form.password.data
@@ -302,7 +309,7 @@ def reg_news():
         elif 'error' in resp:
             if resp['error'] == 'not_unique_header':
                 form.header.errors = ['Пожалуйста, выберете другой заголовок. Этот уже занят.']
-            if resp['error'] == 'Bad user':
+            elif resp['error'] == 'Bad user':
                 form.password.errors = ['Неверный пароль.']
         elif 'success' in resp and user.position != 3:
             return redirect('/news')
@@ -318,12 +325,11 @@ def show_news(number):
     return render_template('show_news.html', news=news, title='Новости')
 
 
-def abort_if_page_not_found(page_id):
-    abort(404)
-
-
 @app.route('/news/page/<int:number>')
 def news_page(number=0, news_resp=None, by_author=False, title='Главная'):
+    def abort_if_page_not_found(page_id):
+        abort(404)
+
     if news_resp is None:
         news = requests.get(address + '/api/v2/news').json()['news']
     else:
@@ -353,6 +359,11 @@ def news_page(number=0, news_resp=None, by_author=False, title='Главная')
     return render_template('news_page.html', **params)
 
 
+@app.route('/news')
+def f():
+    return redirect('/')
+
+
 @app.route('/')  # Пока просто заглушка для удобства тестирования
 def main():
     return news_page()
@@ -368,14 +379,27 @@ def edit_news(ids):
             form.header.data = news.header
             form.theme.data = news.theme
             form.preview.data, form.text.data = get_preview_and_text(news.text_address)
+            sp = news.category
+            for i in sp:
+                if i.name == 'politic':
+                    form.politic.data = True
+                elif i.name == 'technology':
+                    form.technology.data = True
+                elif i.name == 'health':
+                    form.health.data = True
         else:
             abort(404)
     if form.validate_on_submit():
+        try:
+            cat_str_list = get_string_list_by_data(form.politic.data, form.technology.data, form.health.data)
+        except EmptyParamsError:
+            return render_template('add_news.html', title='Добавление новости', form=form, current_user=current_user,
+                                   message="Пожалуйста, выберете категорию новости.")
         resp = requests.put(address + f'/api/v2/news/{ids}', json={
             'password': form.password.data,
             'author': current_user.email,
-            'theme': form.theme.data,
             'preview': form.preview.data,
+            'category_string_list': cat_str_list,
             'text': form.text.data,
             'header': form.header.data
         })

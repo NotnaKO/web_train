@@ -13,7 +13,6 @@ class News(SqlAlchemyBase, SerializerMixin):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     author = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.id"))
     header = sqlalchemy.Column(sqlalchemy.String, nullable=True)
-    theme = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     category = orm.relation("Category",
                             secondary="category_association",
                             backref="news")

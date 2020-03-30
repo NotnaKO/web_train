@@ -17,12 +17,19 @@ class NewsResource(Resource):
         session = create_session()
         news = session.query(News).get(news_id)
         d = {'news': news.to_dict(
-            only=('id', 'header', 'theme', 'modified_date'))}
+            only=('id', 'header', 'modified_date'))}
+        for i in news.category:
+            if i.name == 'politic':
+                d['news']['politic'] = True
+            elif i.name == 'technology':
+                d['news']['technology'] = True
+            elif i.name == 'health':
+                d['news']['health'] = True
         auth = session.query(User).get(news.author)
         d['news']['author_surname'] = auth.surname
         d['news']['author_name'] = auth.name
         d['news']['author_id'] = auth.id
-        with open(os.path.join('news', news.text_address[0].name), encoding='utf-8') as f:
+        with open(os.path.join('news', news.text_address), encoding='utf-8') as f:
             d['news']['text'] = f.read()
         return jsonify(d)
 
@@ -51,7 +58,6 @@ class NewsResource(Resource):
         parser.add_argument('author', required=True, type=str)
         parser.add_argument('header', required=True)
         parser.add_argument('category_string_list', required=True, type=str)
-        parser.add_argument('theme', required=True, type=str)
         parser.add_argument('preview', required=True, type=str)
         parser.add_argument('text', required=True, type=str)
         args = parser.parse_args()
@@ -80,14 +86,13 @@ class NewsResource(Resource):
             for i in text_address:
                 if i.isdigit() or i.isalpha() or i == '.':
                     result += i
-            news = News(author=user.id, header=args['header'], theme=args['theme'], text_address=result)
+            news = News(author=user.id, header=args['header'], text_address=result)
             for i in args['category_string_list'].split(','):
                 news.category.append(Category(name=i.strip()))
             user.news.append(news)
             session.merge(user)
             session.merge(news)
             session.commit()
-
             with open(os.path.join('news/' + result), encoding='utf-8', mode='w') as text_file:
                 text_file.write(args['preview'] + SEPARATOR + args['text'])
             return jsonify({'success': 'OK'})
@@ -106,7 +111,6 @@ class NewsListResource(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('author', required=True, type=str)
         parser.add_argument('header', required=True)
-        parser.add_argument('theme', required=True, type=str)
         parser.add_argument('category_string_list', required=True, type=str)
         parser.add_argument('preview', required=True, type=str)
         parser.add_argument('text', required=True, type=str)
@@ -129,7 +133,7 @@ class NewsListResource(Resource):
         for i in text_address:
             if i.isdigit() or i.isalpha() or i == '.':
                 result += i
-        news = News(author=user.id, header=args['header'], theme=args['theme'], text_address=text_address)
+        news = News(author=user.id, header=args['header'], text_address=result)
         for i in args['category_string_list'].split(','):
             news.category.append(Category(name=i.strip()))
         user.news.append(news)

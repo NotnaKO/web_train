@@ -7,8 +7,6 @@ from wtforms import *
 from wtforms.fields.html5 import EmailField
 from wtforms.validators import *
 from data import users_resourse, news_resource
-from data.news import News
-from data.db_session import create_session
 from data.db_session import global_init
 from algr.user_alg import get_params_to_show_user, MainNews, Zagl, get_user_by_email, get_user_by_id, AuthError
 from algr.news_alg import get_news_by_id, get_preview_and_text

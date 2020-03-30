@@ -2,7 +2,6 @@ import datetime
 
 import sqlalchemy
 from sqlalchemy import orm
-
 from .db_session import SqlAlchemyBase
 from .users import SerializerMixin
 
@@ -15,9 +14,10 @@ class News(SqlAlchemyBase, SerializerMixin):
     author = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.id"))
     header = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     theme = sqlalchemy.Column(sqlalchemy.String, nullable=True)
-    text_address = orm.relation("Address",
-                                secondary="association",
-                                backref="news")
+    category = orm.relation("Category",
+                            secondary="category_association",
+                            backref="news")
+    text_address = sqlalchemy.Column(sqlalchemy.String)
     modified_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                       default=datetime.datetime.now)
     user = orm.relation('User')

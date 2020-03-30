@@ -1,8 +1,8 @@
 from flask import *
-from flask_restful import reqparse, abort, Resource
+from flask_restful import reqparse, Resource
 from .news import News, SEPARATOR
 from .users import User
-from .address import Address
+from .category import Category
 from .db_session import create_session
 from algr.user_alg import get_user_by_email, AuthError, check_user, address
 import random
@@ -50,6 +50,7 @@ class NewsResource(Resource):
         parser.add_argument('password', required=True)
         parser.add_argument('author', required=True, type=str)
         parser.add_argument('header', required=True)
+        parser.add_argument('category_string_list', required=True, type=str)
         parser.add_argument('theme', required=True, type=str)
         parser.add_argument('preview', required=True, type=str)
         parser.add_argument('text', required=True, type=str)
@@ -65,8 +66,8 @@ class NewsResource(Resource):
         text_address = ''
         for i in range(5):
             a = args['header'] + str(user.id) + str(random.randint(1, 2 ** 14)) + '.txt'
-            ad = session.query(Address).filter(Address.name == a).first()
-            if not ad:
+            n = session.query(News).filter(News.text_address == a).first()
+            if not n:
                 text_address = a
                 break
         if not text_address:
@@ -75,18 +76,19 @@ class NewsResource(Resource):
             if not check_user(user, args['password']):
                 return jsonify({'error': 'Bad user'})
 
-            s = ''
+            result = ''
             for i in text_address:
                 if i.isdigit() or i.isalpha() or i == '.':
-                    s += i
-            news = News(author=user.id, header=args['header'], theme=args['theme'])
-            news.text_address.append(Address(name=s))
+                    result += i
+            news = News(author=user.id, header=args['header'], theme=args['theme'], text_address=result)
+            for i in args['category_string_list'].split(','):
+                news.category.append(Category(name=i.strip()))
             user.news.append(news)
             session.merge(user)
             session.merge(news)
             session.commit()
 
-            with open(os.path.join('news/' + s), encoding='utf-8', mode='w') as text_file:
+            with open(os.path.join('news/' + result), encoding='utf-8', mode='w') as text_file:
                 text_file.write(args['preview'] + SEPARATOR + args['text'])
             return jsonify({'success': 'OK'})
         else:
@@ -105,6 +107,7 @@ class NewsListResource(Resource):
         parser.add_argument('author', required=True, type=str)
         parser.add_argument('header', required=True)
         parser.add_argument('theme', required=True, type=str)
+        parser.add_argument('category_string_list', required=True, type=str)
         parser.add_argument('preview', required=True, type=str)
         parser.add_argument('text', required=True, type=str)
         parser.add_argument('password', required=True)
@@ -116,23 +119,24 @@ class NewsListResource(Resource):
         text_address = ''
         for i in range(5):
             a = args['header'] + str(user.id) + str(random.randint(1, 2 ** 14)) + '.txt'
-            ad = session.query(Address).filter(Address.name == a).first()
-            if not ad:
+            n = session.query(News).filter(News.text_address == a).first()
+            if not n:
                 text_address = a
                 break
         if not text_address:
             return jsonify({'error': 'not_unique_header'})
-        s = ''
+        result = ''
         for i in text_address:
             if i.isdigit() or i.isalpha() or i == '.':
-                s += i
-        news = News(author=user.id, header=args['header'], theme=args['theme'])
-        news.text_address.append(Address(name=s))
+                result += i
+        news = News(author=user.id, header=args['header'], theme=args['theme'], text_address=text_address)
+        for i in args['category_string_list'].split(','):
+            news.category.append(Category(name=i.strip()))
         user.news.append(news)
         session.merge(user)
         session.merge(news)
         session.commit()
 
-        with open(os.path.join('news/' + s), encoding='utf-8', mode='w') as text_file:
+        with open(os.path.join('news/' + result), encoding='utf-8', mode='w') as text_file:
             text_file.write(args['preview'] + SEPARATOR + args['text'])
         return jsonify({'success': 'OK'})

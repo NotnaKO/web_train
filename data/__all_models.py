@@ -1,3 +1,3 @@
 from .users import User
-from .address import Address
+from .category import Category
 from .news import News

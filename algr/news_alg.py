@@ -3,12 +3,27 @@ from flask import abort
 from data.news import SEPARATOR
 from data.news import News
 
+MAX_LEN_CATEGORY = 3
+CATEGORY_LIST = {'politic', 'technology', 'health'}
+
 
 class NewsError(Exception):
     pass
 
 
 class EmptyParamsError(NewsError):
+    pass
+
+
+class BigLenCategoryError(NewsError):
+    pass
+
+
+class NotUniqueCategoryError(NewsError):
+    pass
+
+
+class BadCategoryError(NewsError):
     pass
 
 
@@ -25,7 +40,7 @@ def get_news_by_id(ids):
 
 
 def get_preview_and_text(text_address):
-    n = text_address[0].name
+    n = text_address
     with open('news/{}'.format(n), encoding='utf-8') as file:
         s = file.read()
     return s.split(SEPARATOR)
@@ -42,3 +57,27 @@ def get_string_list_by_data(politic=False, technology=False, health=False):
     if health:
         sp.append('health')
     return ','.join(sp)
+
+
+def get_data_by_list(sp: list):
+    res = [False, False, False]
+    for i in sp:
+        if i.name == 'politic':
+            res[0] = True
+        elif i.name == 'health':
+            res[2] = True
+        elif i.name == 'technology':
+            res[1] = True
+    return res
+
+
+def check_cat_string_list(sp: list):
+    if not sp:
+        raise EmptyParamsError
+    if len(sp) > MAX_LEN_CATEGORY:
+        raise BigLenCategoryError
+    if len(set(sp)) != len(sp):
+        raise NotUniqueCategoryError
+    if set(sp) > CATEGORY_LIST:
+        raise BadCategoryError
+    return True

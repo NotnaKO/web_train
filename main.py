@@ -9,7 +9,8 @@ from wtforms.validators import *
 from data import users_resourse, news_resource
 from data.db_session import global_init
 from algr.user_alg import get_params_to_show_user, MainNews, Zagl, get_user_by_email, get_user_by_id, AuthError
-from algr.news_alg import get_news_by_id, get_preview_and_text, get_string_list_by_data, EmptyParamsError
+from algr.news_alg import get_news_by_id, get_preview_and_text, get_string_list_by_data, EmptyParamsError, \
+    get_data_by_list
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
@@ -373,22 +374,6 @@ def main():
 @login_required
 def edit_news(ids):
     form = EditNewsForm()
-    if request.method == "GET":
-        news = get_news_by_id(ids)
-        if news.user == current_user or current_user.position == 1:
-            form.header.data = news.header
-            form.theme.data = news.theme
-            form.preview.data, form.text.data = get_preview_and_text(news.text_address)
-            sp = news.category
-            for i in sp:
-                if i.name == 'politic':
-                    form.politic.data = True
-                elif i.name == 'technology':
-                    form.technology.data = True
-                elif i.name == 'health':
-                    form.health.data = True
-        else:
-            abort(404)
     if form.validate_on_submit():
         try:
             cat_str_list = get_string_list_by_data(form.politic.data, form.technology.data, form.health.data)
@@ -410,9 +395,19 @@ def edit_news(ids):
             form.password.errors = ['Неверный пароль. Попробуйте ещё раз.']
         elif resp_js['error'] == 'not unique header':
             form.header.errors = ['Уже есть много статей с таким заголовком, пожалуйста выбирете другой.']
+        elif resp_js['error'] == 'Empty category':
+            return render_template('add_news.html', title='Редактирование новости', form=form,
+                                   message='Пожалуста, выберете хотя бы одну категорию своей новости.')
         else:
             return render_template('add_news.html', title='Редактирование новости', form=form,
                                    message='Произошла непредвиденная ошибка, пожалуйста попробуйте позже.')
+    news = get_news_by_id(ids)
+    if news.user == current_user or current_user.position == 1:
+        form.header.data = news.header
+        form.politic.data, form.technology.data, form.health.data = get_data_by_list(news.category)
+        form.preview.data, form.text.data = get_preview_and_text(news.text_address)
+    else:
+        abort(404)
     return render_template('add_news.html', title='Редактирование новости', form=form)
 
 

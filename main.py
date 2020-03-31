@@ -1,5 +1,5 @@
 import requests
-from flask import Flask, render_template, redirect, request, abort, jsonify
+from flask import Flask, render_template, redirect, abort, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_restful import Api
 from flask_wtf import *
@@ -13,7 +13,7 @@ from algr.news_alg import get_news_by_id, get_preview_and_text, get_string_list_
     get_data_by_list
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
+app.config['SECRET_KEY'] = 'yandex_lyceum_secret_key'
 global_init('db/economy_science.db')
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -80,38 +80,38 @@ def load_user(user_id):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    form = LoginForm()
-    if form.validate_on_submit():
+    login_form = LoginForm()
+    if login_form.validate_on_submit():
         try:
-            user = get_user_by_email(form.email.data)
+            user = get_user_by_email(login_form.email.data)
         except AuthError:
-            form.email.errors = ['Не найден такой пользователь']
-            return render_template('login.html', title='Вход', form=form)
-        if user and user.check_password(form.password.data):
-            login_user(user, remember=form.remember_me.data)
+            login_form.email.errors = ['Не найден такой пользователь']
+            return render_template('login.html', title='Вход', form=login_form)
+        if user and user.check_password(login_form.password.data):
+            login_user(user, remember=login_form.remember_me.data)
             return redirect("/")
-        form.password.errors = ["Неправильный логин или пароль"]
+        login_form.password.errors = ["Неправильный логин или пароль"]
         return render_template('login.html',
-                               form=form)
-    return render_template('login.html', title='Вход', form=form)
+                               form=login_form)
+    return render_template('login.html', title='Вход', form=login_form)
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def reqister():
-    form = RegisterForm()
-    if form.validate_on_submit():
+    reg_form = RegisterForm()
+    if reg_form.validate_on_submit():
         # password  similar check
-        if form.password.data != form.password_again.data:
-            form.password.errors = ["Пароли не совпадают"]
+        if reg_form.password.data != reg_form.password_again.data:
+            reg_form.password.errors = ["Пароли не совпадают"]
             return render_template('register.html', title='Регистрация',
-                                   form=form)
+                                   form=reg_form)
         resp = requests.post(address + '/api/v2/users', json={
-            'name': form.name.data,
-            'surname': form.surname.data,
-            'age': form.age.data,
-            'address': form.address.data,
-            'email': form.email.data,
-            'password': form.password.data
+            'name': reg_form.name.data,
+            'surname': reg_form.surname.data,
+            'age': reg_form.age.data,
+            'address': reg_form.address.data,
+            'email': reg_form.email.data,
+            'password': reg_form.password.data
         })
         if 'success' in resp.json():
             return redirect('/login')
@@ -120,63 +120,66 @@ def reqister():
             er = True
             # email
             if resp_js['error'] == 'EmailLetterError':
-                form.email.errors = ['Email может состоять из английских букв, цифр и других символов']
+                reg_form.email.errors = ['Email может состоять из английских букв, цифр и других символов']
             elif resp_js['error'] == 'EnglishError':
-                form.email.errors = ['Email должен содержать английские буквы']
+                reg_form.email.errors = ['Email должен содержать английские буквы']
             elif resp_js['error'] == 'OthersLettersError':
-                form.email.errors = ['Email должен содержать другие символы']
+                reg_form.email.errors = ['Email должен содержать другие символы']
             elif resp_js['error'] == 'SimilarUserError':
-                form.email.errors = ["Такой пользователь уже есть"]
+                reg_form.email.errors = ["Такой пользователь уже есть"]
             # password
             elif resp_js['error'] == 'PasswordLetterError':
-                form.password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
+                reg_form.password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
             elif resp_js['error'] == 'LengthError':
-                form.password.errors = ['В пароле должно быть 8 и больше символов.']
+                reg_form.password.errors = ['В пароле должно быть 8 и больше символов.']
             elif resp_js['error'] == 'LanguageError':
-                form.password.errors = ['В пароле должныть только буквы английского языка, цифры и другие символы.']
+                reg_form.password.errors = ['В пароле должныть только буквы английского языка, цифры и другие символы.']
             elif resp_js['error'] == 'DigitError':
-                form.password.errors = ['В пароле должны быть цифры.']
+                reg_form.password.errors = ['В пароле должны быть цифры.']
             elif resp_js['error'] == 'SequenceError':
-                form.password.errors = ['В пароле не должно быть трёх символов, идущих подряд на клавиатуре.']
+                reg_form.password.errors = ['В пароле не должно быть трёх символов, идущих подряд на клавиатуре.']
             # age
             elif resp_js['error'] == 'AgeRangeError' or resp_js['error'] == 'ValueAgeError':
-                form.age.errors = ['Возраст должен быть натуральным числом от 6 до 110']
+                reg_form.age.errors = ['Возраст должен быть натуральным числом от 6 до 110']
             else:
                 er = False
             if er:
                 return render_template('register.html', title='Регистрация',
-                                       form=form)
+                                       form=reg_form)
             else:
                 return render_template('register.html', title='Регистрация',
-                                       form=form, message='Произошла ошибка. Проверьте данные ещё раз.')
-    return render_template('register.html', title='Регистрация', form=form)
+                                       form=reg_form, message='Произошла ошибка. Проверьте данные ещё раз.')
+    return render_template('register.html', title='Регистрация', form=reg_form)
 
 
 @app.route('/users/<int:ids>', methods=['GET', 'POST'])
 def show_users_data(ids):
-    form = UserForm()
-    if form.validate_on_submit():
+    user_form = UserForm()
+    if user_form.validate_on_submit():
         user = get_user_by_id(ids)
         resp = requests.put(address + f'/api/v2/users/{ids}', json={
-            'name': form.name.data,
-            'surname': form.surname.data,
-            'age': form.age.data,
-            'address': form.address.data,
+            'name': user_form.name.data,
+            'surname': user_form.surname.data,
+            'age': user_form.age.data,
+            'address': user_form.address.data,
             'email': user.email,
-            'password': form.password.data,
-            'new_password': form.new_password.data,
-            'old_password': form.old_password.data,
-            'password_again': form.password_again.data,
+            'password': user_form.password.data,
+            'new_password': user_form.new_password.data,
+            'old_password': user_form.old_password.data,
+            'password_again': user_form.password_again.data,
             'position': user.position
         })
         if 'success' in resp.json():
             user = get_user_by_id(ids)
-            params = get_params_to_show_user(user, current_user, form)
-            if form.password.data and not all([form.old_password.data, form.new_password.data, form.password_again]):
+            params = get_params_to_show_user(user, current_user, user_form)
+            if user_form.password.data and not all(
+                    [user_form.old_password.data, user_form.new_password.data, user_form.password_again]):
                 return render_template('show_users.html', success_load_data=True, **params)
-            if all([form.old_password.data, form.new_password.data, form.password_again]) and not form.password.data:
+            if all([user_form.old_password.data, user_form.new_password.data,
+                    user_form.password_again]) and not user_form.password.data:
                 return render_template('show_users.html', success_set_password=True, **params)
-            if all([form.old_password.data, form.new_password.data, form.password_again]) and form.password.data:
+            if all([user_form.old_password.data, user_form.new_password.data,
+                    user_form.password_again]) and user_form.password.data:
                 return render_template('show_users.html', success_set_password=True, success_load_data=True, **params)
         else:
             user = get_user_by_id(ids)
@@ -184,59 +187,61 @@ def show_users_data(ids):
             er = True
             # email
             if resp_js['error'] == 'EmailLetterError':
-                form.email.errors = ['Email может состоять из английских букв, цифр и других символов']
+                user_form.email.errors = ['Email может состоять из английских букв, цифр и других символов']
             elif resp_js['error'] == 'EnglishError':
-                form.email.errors = ['Email должен содержать английские буквы']
+                user_form.email.errors = ['Email должен содержать английские буквы']
             elif resp_js['error'] == 'OthersLettersError':
-                form.email.errors = ['Email должен содержать другие символы']
+                user_form.email.errors = ['Email должен содержать другие символы']
             elif resp_js['error'] == 'SimilarUserError':
-                form.email.errors = ["Такой пользователь уже есть"]
+                user_form.email.errors = ["Такой пользователь уже есть"]
             # password
             elif resp_js['error'] == 'PasswordLetterError':
-                if form.password.data:
-                    form.password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
-                if form.new_password.data:
-                    form.new_password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
+                if user_form.password.data:
+                    user_form.password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
+                if user_form.new_password.data:
+                    user_form.new_password.errors = ['В пароле должны присутствовать строчные и прописные буквы.']
             elif resp_js['error'] == 'LengthError':
-                if form.password.data:
-                    form.password.errors = ['В пароле должно быть 8 и больше символов.']
-                if form.new_password.data:
-                    form.new_password.errors = ['В пароле должно быть 8 и больше символов.']
+                if user_form.password.data:
+                    user_form.password.errors = ['В пароле должно быть 8 и больше символов.']
+                if user_form.new_password.data:
+                    user_form.new_password.errors = ['В пароле должно быть 8 и больше символов.']
             elif resp_js['error'] == 'LanguageError':
-                if form.password.data:
-                    form.password.errors = ['В пароле должныть только буквы английского языка, цифры и другие символы.']
-                if form.new_password.data:
-                    form.new_password.errors = [
+                if user_form.password.data:
+                    user_form.password.errors = [
+                        'В пароле должныть только буквы английского языка, цифры и другие символы.']
+                if user_form.new_password.data:
+                    user_form.new_password.errors = [
                         'В пароле должныть только буквы английского языка, цифры и другие символы.']
             elif resp_js['error'] == 'DigitError':
-                if form.password.data:
-                    form.password.errors = ['В пароле должны быть цифры.']
-                if form.new_password.data:
-                    form.new_password.errors = ['В пароле должны быть цифры.']
+                if user_form.password.data:
+                    user_form.password.errors = ['В пароле должны быть цифры.']
+                if user_form.new_password.data:
+                    user_form.new_password.errors = ['В пароле должны быть цифры.']
             elif resp_js['error'] == 'SequenceError':
-                if form.password.data:
-                    form.password.errors = ['В пароле не должно быть трёх символов, идущих подряд на клавиатуре.']
-                if form.new_password.data:
-                    form.new_password.errors = ['В пароле не должно быть трёх символов, идущих подряд на клавиатуре.']
+                if user_form.password.data:
+                    user_form.password.errors = ['В пароле не должно быть трёх символов, идущих подряд на клавиатуре.']
+                if user_form.new_password.data:
+                    user_form.new_password.errors = [
+                        'В пароле не должно быть трёх символов, идущих подряд на клавиатуре.']
             # age
             elif resp_js['error'] == 'AgeRangeError' or resp_js['error'] == 'ValueAgeError':
-                form.age.errors = ['Возраст должен быть натуральным числом от 6 до 110.']
+                user_form.age.errors = ['Возраст должен быть натуральным числом от 6 до 110.']
             elif resp_js['error'] == 'Bad user':
-                form.password.errors = ['Ошибка пользователя. Попробуйте выйти и зайти снова.']
+                user_form.password.errors = ['Ошибка пользователя. Попробуйте выйти и зайти снова.']
             elif resp_js['error'] == 'Bad password':
-                form.password.errors = ['Ошибка пользователя. Пожалуйста, введите правильный пароль.']
+                user_form.password.errors = ['Ошибка пользователя. Пожалуйста, введите правильный пароль.']
             elif resp_js['error'] == 'Not equal new and again':
-                form.password_again.errors = ['Пароли не совпадают']
+                user_form.password_again.errors = ['Пароли не совпадают']
             elif resp_js['error'] == 'Bad old password':
-                form.old_password.errors = ['Ошибка пользователя. Пожалуйста, введите правильный пароль.']
+                user_form.old_password.errors = ['Ошибка пользователя. Пожалуйста, введите правильный пароль.']
             elif resp_js['error'] == 'Not all new password':
-                form.old_password.errors = ['Пожалуйста, заполните все поля паролей перед сменой.']
+                user_form.old_password.errors = ['Пожалуйста, заполните все поля паролей перед сменой.']
             elif resp_js['error'] == 'Empty passwords':
-                form.password.errors = ['Пожалуйста, заполните это поле, если хотите изменить свои данные']
-                form.old_password.errors = ['Пожалуйста, заполните это поле, если сменить пароль']
+                user_form.password.errors = ['Пожалуйста, заполните это поле, если хотите изменить свои данные']
+                user_form.old_password.errors = ['Пожалуйста, заполните это поле, если сменить пароль']
             else:
                 er = False
-            params = get_params_to_show_user(user, current_user, form)
+            params = get_params_to_show_user(user, current_user, user_form)
             if er:
                 return render_template('show_users.html', **params)
             else:
@@ -250,7 +255,7 @@ def show_users_data(ids):
             if not (user.position == 2 or (user.position == 3 and user.id == current_user.id) or (
                     current_user.position == 1)):
                 abort(404)
-        params = get_params_to_show_user(user, current_user, form)
+        params = get_params_to_show_user(user, current_user, user_form)
         return render_template('show_users.html', **params)
 
 
@@ -267,33 +272,35 @@ def show_news_by_author(ids, number):
 @login_required
 @app.route('/news/add_news', methods=['GET', 'POST'])
 def add_news():
-    form = NewsForm()
-    if form.validate_on_submit():
+    news_form = NewsForm()
+    if news_form.validate_on_submit():
         try:
-            cat_str_list = get_string_list_by_data(form.politic.data, form.technology.data, form.health.data)
+            cat_str_list = get_string_list_by_data(news_form.politic.data, news_form.technology.data,
+                                                   news_form.health.data)
         except EmptyParamsError:
-            return render_template('add_news.html', title='Добавление новости', form=form, current_user=current_user,
+            return render_template('add_news.html', title='Добавление новости', form=news_form,
+                                   current_user=current_user,
                                    message="Пожалуйста, выберете категорию новости.")
         if current_user.is_authenticated:
             resp = requests.post(address + '/api/v2/news', json={
                 'author': current_user.email,
-                'header': form.header.data,
+                'header': news_form.header.data,
                 'category_string_list': cat_str_list,
-                'preview': form.preview.data,
-                'text': form.text.data,
-                'password': form.password.data
+                'preview': news_form.preview.data,
+                'text': news_form.text.data,
+                'password': news_form.password.data
             }).json()
             user = current_user
         else:
             resp = requests.post(address + '/api/v2/news', json={
-                'author': form.author.data,
-                'header': form.header.data,
+                'author': news_form.author.data,
+                'header': news_form.header.data,
                 'category_string_list': cat_str_list,
-                'preview': form.preview.data,
-                'text': form.text.data,
-                'password': form.password.data
+                'preview': news_form.preview.data,
+                'text': news_form.text.data,
+                'password': news_form.password.data
             }).json()
-            user = get_user_by_email(form.author.data)
+            user = get_user_by_email(news_form.author.data)
         if 'success' in resp and user.position == 3:
             p = requests.put(address + '/api/v2/users/{}'.format(user.id), json={
                 'id': user.id,
@@ -303,21 +310,22 @@ def add_news():
                 'position': 2,
                 'age': user.age,
                 'address': user.address,
-                'password': form.password.data
+                'password': news_form.password.data
             })
             if 'success' in p.json():
                 return redirect('/news')
         elif 'error' in resp:
             if resp['error'] == 'not_unique_header':
-                form.header.errors = ['Пожалуйста, выберете другой заголовок. Этот уже занят.']
+                news_form.header.errors = ['Пожалуйста, выберете другой заголовок. Этот уже занят.']
             elif resp['error'] == 'Bad user':
-                form.password.errors = ['Неверный пароль.']
+                news_form.password.errors = ['Неверный пароль.']
         elif 'success' in resp and user.position != 3:
             return redirect('/news')
         else:
-            return render_template('add_news.html', title='Добавление новости', form=form, current_user=current_user,
+            return render_template('add_news.html', title='Добавление новости', form=news_form,
+                                   current_user=current_user,
                                    message='Произошла непредвиденная ошибка, пожалуйста попробуйте позже.')
-    return render_template('add_news.html', title='Добавление новости', form=form, current_user=current_user)
+    return render_template('add_news.html', title='Добавление новости', form=news_form, current_user=current_user)
 
 
 @app.route('/news/<int:number>')
@@ -328,7 +336,7 @@ def show_news(number):
 
 @app.route('/news/page/<int:number>')
 def news_page(number=0, news_resp=None, by_author=False, title='Главная'):
-    def abort_if_page_not_found(page_id):
+    def abort_if_page_not_found():
         abort(404)
 
     if news_resp is None:
@@ -345,7 +353,7 @@ def news_page(number=0, news_resp=None, by_author=False, title='Главная')
         else:
             break
     if not sp:
-        abort_if_page_not_found(number)
+        abort_if_page_not_found()
     params = {
         'main_news': sp[0],
         'news2': sp[1] if len(sp) > 1 else Zagl(),
@@ -373,42 +381,45 @@ def main():
 @app.route('/news/edit_news/<int:ids>', methods=['GET', 'POST'])
 @login_required
 def edit_news(ids):
-    form = EditNewsForm()
-    if form.validate_on_submit():
+    ed_news_form = EditNewsForm()
+    if ed_news_form.validate_on_submit():
         try:
-            cat_str_list = get_string_list_by_data(form.politic.data, form.technology.data, form.health.data)
+            cat_str_list = get_string_list_by_data(ed_news_form.politic.data, ed_news_form.technology.data,
+                                                   ed_news_form.health.data)
         except EmptyParamsError:
-            return render_template('add_news.html', title='Добавление новости', form=form, current_user=current_user,
+            return render_template('add_news.html', title='Добавление новости', form=ed_news_form,
+                                   current_user=current_user,
                                    message="Пожалуйста, выберете категорию новости.")
         resp = requests.put(address + f'/api/v2/news/{ids}', json={
-            'password': form.password.data,
+            'password': ed_news_form.password.data,
             'author': current_user.email,
-            'preview': form.preview.data,
+            'preview': ed_news_form.preview.data,
             'category_string_list': cat_str_list,
-            'text': form.text.data,
-            'header': form.header.data
+            'text': ed_news_form.text.data,
+            'header': ed_news_form.header.data
         })
         resp_js = resp.json()
         if 'success' in resp_js:
             return redirect('/news')
         elif resp_js['error'] == 'Bad user':
-            form.password.errors = ['Неверный пароль. Попробуйте ещё раз.']
+            ed_news_form.password.errors = ['Неверный пароль. Попробуйте ещё раз.']
         elif resp_js['error'] == 'not unique header':
-            form.header.errors = ['Уже есть много статей с таким заголовком, пожалуйста выбирете другой.']
+            ed_news_form.header.errors = ['Уже есть много статей с таким заголовком, пожалуйста выбирете другой.']
         elif resp_js['error'] == 'Empty category':
-            return render_template('add_news.html', title='Редактирование новости', form=form,
+            return render_template('add_news.html', title='Редактирование новости', form=ed_news_form,
                                    message='Пожалуста, выберете хотя бы одну категорию своей новости.')
         else:
-            return render_template('add_news.html', title='Редактирование новости', form=form,
+            return render_template('add_news.html', title='Редактирование новости', form=ed_news_form,
                                    message='Произошла непредвиденная ошибка, пожалуйста попробуйте позже.')
     news = get_news_by_id(ids)
     if news.user == current_user or current_user.position == 1:
-        form.header.data = news.header
-        form.politic.data, form.technology.data, form.health.data = get_data_by_list(news.category)
-        form.preview.data, form.text.data = get_preview_and_text(news.text_address)
+        ed_news_form.header.data = news.header
+        ed_news_form.politic.data, ed_news_form.technology.data, ed_news_form.health.data = get_data_by_list(
+            news.category)
+        ed_news_form.preview.data, ed_news_form.text.data = get_preview_and_text(news.text_address)
     else:
         abort(404)
-    return render_template('add_news.html', title='Редактирование новости', form=form)
+    return render_template('add_news.html', title='Редактирование новости', form=ed_news_form)
 
 
 @app.route('/news/delete_news/<int:id>', methods=['GET', 'POST'])

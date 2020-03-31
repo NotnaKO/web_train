@@ -9,7 +9,7 @@ import random
 import os
 import requests
 from algr.news_alg import abort_if_news_not_found, get_data_by_list, check_cat_string_list, BadCategoryError, \
-    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError
+    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name
 
 
 class NewsResource(Resource):
@@ -26,6 +26,7 @@ class NewsResource(Resource):
         d['news']['author_id'] = auth.id
         with open(os.path.join('news', news.text_address), encoding='utf-8') as f:
             d['news']['text'] = f.read()
+
         return jsonify(d)
 
     def delete(self, news_id):
@@ -76,7 +77,6 @@ class NewsResource(Resource):
         if 'success' in d.json():
             if not check_user(user, args['password']):
                 return jsonify({'error': 'Bad user'})
-
             result = ''
             for i in text_address:
                 if i.isdigit() or i.isalpha() or i == '.':
@@ -94,10 +94,14 @@ class NewsResource(Resource):
             except NotUniqueCategoryError:
                 return jsonify({'error': 'Not unique categories'})
             for i in sp:
-                news.category.append(Category(name=i.strip()))
+                cat = get_category_by_name(i.strip(), session)
+                if cat:
+                    news.category.append(cat)
+                else:
+                    news.category.append(Category(name=i.strip()))
+            user = get_user_by_email(args['author'], session)
             user.news.append(news)
             session.merge(user)
-            session.merge(news)
             session.commit()
             with open(os.path.join('news/' + result), encoding='utf-8', mode='w') as text_file:
                 text_file.write(args['preview'] + SEPARATOR + args['text'])
@@ -123,7 +127,7 @@ class NewsListResource(Resource):
         parser.add_argument('password', required=True)
         args = parser.parse_args()
         session = create_session()
-        user = session.query(User).filter(User.email == args['author']).first()
+        user = get_user_by_email(args['author'], session)
         if not check_user(user, args['password']):
             return jsonify({'error': 'Bad user'})
         text_address = ''
@@ -152,12 +156,15 @@ class NewsListResource(Resource):
         except NotUniqueCategoryError:
             return jsonify({'error': 'Not unique categories'})
         for i in sp:
-            news.category.append(Category(name=i.strip()))
+            cat = get_category_by_name(i.strip(), session)
+            if cat:
+                news.category.append(cat)
+            else:
+                news.category.append(Category(name=i.strip()))
+        user = get_user_by_email(args['author'], session)
         user.news.append(news)
         session.merge(user)
-        session.merge(news)
         session.commit()
-
         with open(os.path.join('news/' + result), encoding='utf-8', mode='w') as text_file:
             text_file.write(args['preview'] + SEPARATOR + args['text'])
         return jsonify({'success': 'OK'})

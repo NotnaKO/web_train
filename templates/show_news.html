@@ -4,10 +4,19 @@
     <br>
     <div class="blog-post jumbotron">
         <h2 class="blog-post-title" align="center">{{news.header}}</h2>
-        <p class="blog-post-meta">{{news.date}} by <a href="//users/{{news.author}}">{{news.author_surname +
+        <p class="blog-post-meta">{{news.date}}, <a href="//users/{{news.author}}" class="text-secondary">{{news.author_surname
+            +
             ' ' +
-            news.author_name}}</a></p>
-        <h5 align="center">{{news.theme}}</h5>
+            news.author_name}}</a><br>
+            {% if "health" in news.all_categories %}
+            <a href="/category/health/0"><strong class="d-inline-block mb-2 text-success">Здоровье</strong></a>&emsp;
+            {% endif %}
+            {% if "technology" in news.all_categories %}
+            <a href="/category/technology/0"><strong class="d-inline-block mb-2 text-info">Технологии</strong></a>&emsp;
+            {% endif %}
+            {% if "politic" in news.all_categories %}
+            <a href="/category/politic/0"><strong class="d-inline-block mb-2 text-warning">Политика</strong></a>
+            {% endif %}</p>
         <p>{{news.content}}</p>
     </div>
     <a class="btn btn-info my-2 my-sm-0" href="edit_news/{{news.id}}">Редактировать новость</a>

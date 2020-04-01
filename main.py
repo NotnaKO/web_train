@@ -10,7 +10,7 @@ from data import users_resourse, news_resource
 from data.db_session import global_init
 from algr.user_alg import get_params_to_show_user, MainNews, Zagl, get_user_by_email, get_user_by_id, AuthError
 from algr.news_alg import get_news_by_id, get_preview_and_text, get_string_list_by_data, EmptyParamsError, \
-    get_data_by_list
+    get_data_by_list, get_news_by_category_name, get_response_by_news, CATEGORY_LIST
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandex_lyceum_secret_key'
@@ -328,14 +328,32 @@ def add_news():
     return render_template('add_news.html', title='Добавление новости', form=news_form, current_user=current_user)
 
 
+@app.route('/news/category/<category>/<int:number>')
+def show_category_news_page(category: str, number):
+    if category not in CATEGORY_LIST:
+        abort(404)
+    news_list = get_news_by_category_name(category)
+    translate = {
+        'politic': "Политика",
+        'technology': "Технологии",
+        'health': "Здоровье"
+    }
+    news_resp = {'news': []}
+    for i in news_list:
+        el = get_response_by_news(i).json
+        news_resp['news'].append(el['news'])
+    return news_page(number=number, news_resp=jsonify(news_resp), by_category=True,
+                     title=translate[category])
+
+
 @app.route('/news/<int:number>')
 def show_news(number):
-    news = MainNews(number)
+    news = MainNews(number, all_cat=True)
     return render_template('show_news.html', news=news, title='Новости')
 
 
 @app.route('/news/page/<int:number>')
-def news_page(number=0, news_resp=None, by_author=False, title='Главная'):
+def news_page(number=0, news_resp=None, by_author=False, title='Главная', by_category=False):
     def abort_if_page_not_found():
         abort(404)
 

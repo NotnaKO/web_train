@@ -16,7 +16,7 @@ def check_user(use, pas):
 
 
 class MainNews:
-    def __init__(self, idi: int):
+    def __init__(self, idi: int, all_cat=False):
         news = requests.get(address + f'/api/v2/news/{idi}').json()['news']
         self.header = news['header']
         self.preview, self.content = news['text'].split(SEPARATOR)
@@ -27,6 +27,9 @@ class MainNews:
         self.author = news['author_id']
         self.id = news['id']
         self.date = news['modified_date'].split()[0]
+        self.main_category = news['main_category']
+        if all_cat:
+            self.all_categories = news['all_categories']
         self.z = True
 
 
@@ -38,6 +41,7 @@ class Zagl:
         self.author_surname = ''
         self.author_name = ''
         self.date = ''
+        self.category = ''
         self.z = False
 
 

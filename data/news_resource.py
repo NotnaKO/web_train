@@ -9,7 +9,8 @@ import random
 import os
 import requests
 from algr.news_alg import abort_if_news_not_found, get_data_by_list, check_cat_string_list, BadCategoryError, \
-    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name
+    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name, \
+    get_main_cat_news_of_string_list, get_response_by_news
 
 
 class NewsResource(Resource):
@@ -17,17 +18,8 @@ class NewsResource(Resource):
         abort_if_news_not_found(news_id)
         session = create_session()
         news = session.query(News).get(news_id)
-        d = {'news': news.to_dict(
-            only=('id', 'header', 'modified_date'))}
-        d['news']['politic'], d['news']['technology'], d['news']['health'] = get_data_by_list(news.category)
         auth = session.query(User).get(news.author)
-        d['news']['author_surname'] = auth.surname
-        d['news']['author_name'] = auth.name
-        d['news']['author_id'] = auth.id
-        with open(os.path.join('news', news.text_address), encoding='utf-8') as f:
-            d['news']['text'] = f.read()
-
-        return jsonify(d)
+        return get_response_by_news(news, auth=auth, session=session)
 
     def delete(self, news_id):
         parser = reqparse.RequestParser()

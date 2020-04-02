@@ -15,6 +15,7 @@
         <div class="col-md-6">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
                 <div class="col p-4 d-flex flex-column position-static">
+                    {% if not by_category %}
                     {% if news2.main_category == "health" %}
                     <a href="/news/category/health/0"><strong
                             class="d-inline-block mb-2 text-success">Здоровье</strong></a>
@@ -24,7 +25,7 @@
                     {% elif news2.main_category == "politic" %}
                     <a href="/news/category/politic/0"><strong
                             class="d-inline-block mb-2 text-warning">Политика</strong></a>
-                    {% endif %}
+                    {% endif %}{% endif %}
                     <h3 class="mb-0">{{news2.header}}</h3>
                     <div class="mb-1 text-muted">{{news2.date}}</div>
                     <p class="card-text mb-auto">{{news2.preview}}</p>
@@ -36,6 +37,7 @@
         <div class="col-md-6">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
                 <div class="col p-4 d-flex flex-column position-static">
+                    {% if not by_category %}
                     {% if news3.main_category == "health" %}
                     <a href="/news/category/health/0"><strong
                             class="d-inline-block mb-2 text-success">Здоровье</strong></a>
@@ -45,7 +47,7 @@
                     {% elif news3.main_category == "politic" %}
                     <a href="/news/category/politic/0"><strong
                             class="d-inline-block mb-2 text-warning">Политика</strong></a>
-                    {% endif %}
+                    {% endif %}{% endif %}
                     <h3 class="mb-0">{{news3.header}}</h3>
                     <div class="mb-1 text-muted">{{news3.date}}</div>
                     <p class="mb-auto">{{news3.preview}}</p>

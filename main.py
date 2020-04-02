@@ -382,6 +382,7 @@ def news_page(number=0, news_resp=None, by_author=False, title='Главная',
         'page': Page(number),
         'max_page_id': max_news // 6 - 1 if max_news % 6 == 0 else max_news // 6,
         'by_author': by_author,
+        'by_category': by_category,
         'title': title}
     return render_template('news_page.html', **params)
 

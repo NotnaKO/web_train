@@ -249,13 +249,13 @@ def show_users_data(ids):
                                        message='Произошла ошибка. Проверьте данные ещё раз.')
     else:
         user = get_user_by_id(ids)
+        params = get_params_to_show_user(user, current_user, user_form)
         if not current_user.is_authenticated and (user.position != 2 and user.position != 1):
             abort(404)
         if current_user.is_authenticated:
             if not (user.position == 2 or (user.position == 3 and user.id == current_user.id) or (
                     current_user.position == 1)):
                 abort(404)
-        params = get_params_to_show_user(user, current_user, user_form)
         return render_template('show_users.html', **params)
 
 

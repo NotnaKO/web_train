@@ -332,15 +332,15 @@ def add_news():
 def show_category_news_page(category: str, number):
     if category not in CATEGORY_LIST:
         abort(404)
-    news_list = get_news_by_category_name(category)
     translate = {
         'politic': "Политика",
         'technology': "Технологии",
         'health': "Здоровье"
     }
+    news_and_session = get_news_by_category_name(category, return_session=True)
     news_resp = {'news': []}
-    for i in news_list:
-        el = get_response_by_news(i).json
+    for i in news_and_session[0]:
+        el = get_response_by_news(i, session=news_and_session[1]).json
         news_resp['news'].append(el['news'])
     return news_page(number=number, news_resp=jsonify(news_resp), by_category=True,
                      title=translate[category])

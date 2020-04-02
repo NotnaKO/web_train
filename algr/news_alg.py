@@ -82,16 +82,19 @@ def get_data_by_list(sp: list, named=False):
         return ','.join(map(lambda x: x.name, sp))
 
 
-def get_news_by_category_name(category_name: str):
+def get_news_by_category_name(category_name: str, return_session=False):
     session = create_session()
     news = session.query(News).join(News.category).filter(Category.name == category_name).all()
-    return news
+    if not return_session:
+        return news
+    else:
+        return news, session
 
 
 def get_response_by_news(news, auth=None, session=None):
+    if not session:
+        session = create_session()
     if not auth:
-        if not session:
-            session = create_session()
         auth = session.query(User).get(news.author)
     d = {'news': news.to_dict(
         only=('id', 'header', 'modified_date'))}

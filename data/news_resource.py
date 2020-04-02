@@ -8,9 +8,8 @@ from algr.user_alg import get_user_by_email, AuthError, check_user, address
 import random
 import os
 import requests
-from algr.news_alg import abort_if_news_not_found, get_data_by_list, check_cat_string_list, BadCategoryError, \
-    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name, \
-    get_main_cat_news_of_string_list, get_response_by_news
+from algr.news_alg import abort_if_news_not_found, check_cat_string_list, BadCategoryError, \
+    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name, get_response_by_news
 
 
 class NewsResource(Resource):

@@ -7,6 +7,7 @@ address = 'https://pynews.herokuapp.com'
 
 
 address = 'http://127.0.0.1:5000'
+address = 'https://90467d6c.ngrok.io'
 
 
 def check_user(use, pas):

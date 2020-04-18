@@ -63,6 +63,7 @@ class NewsResource(Resource):
             if not n:
                 text_address = a
                 break
+        print(0)
         if not text_address:
             return jsonify({'error': 'not_unique_header'})
         if 'success' in d.json():

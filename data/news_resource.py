@@ -25,16 +25,18 @@ class NewsResource(Resource):
         parser.add_argument('email', required=True)
         parser.add_argument('password', required=True)
         args = parser.parse_args()
+        session = create_session()
         try:
-            user = get_user_by_email(args['email'])
+            user = get_user_by_email(args['email'], session)
         except AuthError:
             return jsonify({'error': 'Bad user'})
+        except Exception:
+            return jsonify({'error': 'Strange error'})
         if not user.check_password(args['password']):
             return jsonify({'error': 'Bad password'})
         abort_if_news_not_found(news_id)
-        session = create_session()
+        print('ok')
         news = session.query(News).get(news_id)
-        os.remove('news/{}'.format(news.text_address))
         session.delete(news)
         session.commit()
         return jsonify({'success': 'OK'})

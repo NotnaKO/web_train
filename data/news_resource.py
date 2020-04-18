@@ -56,6 +56,7 @@ class NewsResource(Resource):
             'email': args['author'],
             'password': args['password']
         })
+        print('ok')
         session = create_session()
         user = session.query(User).filter(User.email == args['author']).first()
         text_address = ''
@@ -68,6 +69,7 @@ class NewsResource(Resource):
         if not text_address:
             return jsonify({'error': 'not_unique_header'})
         if 'success' in d.json():
+            print('ok')
             if not check_user(user, args['password']):
                 return jsonify({'error': 'Bad user'})
             result = ''

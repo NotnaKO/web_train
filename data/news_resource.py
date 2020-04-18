@@ -35,10 +35,13 @@ class NewsResource(Resource):
         if not user.check_password(args['password']):
             return jsonify({'error': 'Bad password'})
         abort_if_news_not_found(news_id)
-        print('ok')
+        print(1)
         news = session.query(News).get(news_id)
+        print(2)
         session.delete(news)
+        print(3)
         session.commit()
+        print(4)
         return jsonify({'success': 'OK'})
 
     def put(self, news_id):
@@ -56,7 +59,6 @@ class NewsResource(Resource):
             'email': args['author'],
             'password': args['password']
         })
-        print('ok')
         session = create_session()
         user = session.query(User).filter(User.email == args['author']).first()
         text_address = ''
@@ -69,7 +71,6 @@ class NewsResource(Resource):
         if not text_address:
             return jsonify({'error': 'not_unique_header'})
         if 'success' in d.json():
-            print('ok')
             if not check_user(user, args['password']):
                 return jsonify({'error': 'Bad user'})
             result = ''

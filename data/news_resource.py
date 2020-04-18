@@ -36,7 +36,6 @@ class NewsResource(Resource):
         news = session.query(News).get(news_id)
         session.delete(news)
         session.commit()
-        print(-1)
         return jsonify({'success': 'OK'})
 
     def put(self, news_id):
@@ -63,19 +62,15 @@ class NewsResource(Resource):
             if not n:
                 text_address = a
                 break
-        print(0)
         if not text_address:
             return jsonify({'error': 'not_unique_header'})
         if 'success' in d.json():
-            print(1)
             result = ''
             for i in text_address:
                 if i.isdigit() or i.isalpha() or i == '.':
                     result += i
-            print(2)
             news = News(author=user.id, header=args['header'], text_address=result)
             sp = args['category_string_list'].split(',')
-            print(3)
             try:
                 check_cat_string_list(sp)
             except EmptyParamsError:
@@ -86,22 +81,18 @@ class NewsResource(Resource):
                 return jsonify({'error': 'Big length of category'})
             except NotUniqueCategoryError:
                 return jsonify({'error': 'Not unique categories'})
-            print(4)
             for i in sp:
                 cat = get_category_by_name(i.strip(), session)
                 if cat:
                     news.category.append(cat)
                 else:
                     news.category.append(Category(name=i.strip()))
-            print(5)
             user = get_user_by_email(args['author'], session)
             user.news.append(news)
-            print(6)
             session.merge(user)
             session.commit()
             with open(os.path.join('news/' + result), encoding='utf-8', mode='w') as text_file:
                 text_file.write(args['preview'] + SEPARATOR + args['text'])
-            print(7)
             return jsonify({'success': 'OK'})
         else:
             return d

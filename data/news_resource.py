@@ -67,6 +67,7 @@ class NewsResource(Resource):
         if not text_address:
             return jsonify({'error': 'not_unique_header'})
         if 'success' in d.json():
+            print(0)
             if not check_user(user, args['password']):
                 return jsonify({'error': 'Bad user'})
             print(1)

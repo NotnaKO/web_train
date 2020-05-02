@@ -12,6 +12,7 @@ from algr.news_alg import abort_if_news_not_found, check_cat_string_list, BadCat
     BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name, get_response_by_news
 
 
+# В этой ветке я подумаю о том, как оставить редактирование
 class NewsResource(Resource):
     def get(self, news_id):
         abort_if_news_not_found(news_id)

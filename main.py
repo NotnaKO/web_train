@@ -64,10 +64,6 @@ class UserForm(RegisterForm):
     password_again = PasswordField('Повторите пароль')
 
 
-class EditNewsForm(NewsForm):
-    submit = SubmitField('Сохранить')
-
-
 class Page:
     def __init__(self, i: int):
         self.id = i
@@ -395,50 +391,6 @@ def f():
 @app.route('/')  # Пока просто заглушка для удобства тестирования
 def main():
     return news_page()
-
-
-@app.route('/news/edit_news/<int:ids>', methods=['GET', 'POST'])
-@login_required
-def edit_news(ids):
-    ed_news_form = EditNewsForm()
-    if ed_news_form.validate_on_submit():
-        try:
-            cat_str_list = get_string_list_by_data(ed_news_form.politic.data, ed_news_form.technology.data,
-                                                   ed_news_form.health.data)
-        except EmptyParamsError:
-            return render_template('add_news.html', title='Добавление новости', form=ed_news_form,
-                                   current_user=current_user,
-                                   message="Пожалуйста, выберете категорию новости.")
-        resp = requests.put(address + f'/api/v2/news/{ids}', json={
-            'password': ed_news_form.password.data,
-            'author': current_user.email,
-            'preview': ed_news_form.preview.data,
-            'category_string_list': cat_str_list,
-            'text': ed_news_form.text.data,
-            'header': ed_news_form.header.data
-        })
-        resp_js = resp.json()
-        if 'success' in resp_js:
-            return redirect('/news')
-        elif resp_js['error'] == 'Bad user':
-            ed_news_form.password.errors = ['Неверный пароль. Попробуйте ещё раз.']
-        elif resp_js['error'] == 'not unique header':
-            ed_news_form.header.errors = ['Уже есть много статей с таким заголовком, пожалуйста выбирете другой.']
-        elif resp_js['error'] == 'Empty category':
-            return render_template('add_news.html', title='Редактирование новости', form=ed_news_form,
-                                   message='Пожалуста, выберете хотя бы одну категорию своей новости.')
-        else:
-            return render_template('add_news.html', title='Редактирование новости', form=ed_news_form,
-                                   message='Произошла непредвиденная ошибка, пожалуйста попробуйте позже.')
-    news = get_news_by_id(ids)
-    if news.user == current_user or current_user.position == 1:
-        ed_news_form.header.data = news.header
-        ed_news_form.politic.data, ed_news_form.technology.data, ed_news_form.health.data = get_data_by_list(
-            news.category)
-        ed_news_form.preview.data, ed_news_form.text.data = get_preview_and_text(news.text_address)
-    else:
-        abort(404)
-    return render_template('add_news.html', title='Редактирование новости', form=ed_news_form)
 
 
 @app.route('/news/delete_news/<int:id>', methods=['GET', 'POST'])

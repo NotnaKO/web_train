@@ -19,5 +19,10 @@
             {% endif %}</p>
         <p>{{news.content}}</p>
     </div>
+    {% if current_user.is_authenticated %}
+    {% if current_user.position == 1 or (current_user.position == 2 and news.author == current_user.id) %}
+    <a class="btn btn-info my-2 my-sm-0" href="edit_news/{{news.id}}">Редактировать новость</a>
+    {% endif %}
+    {% endif %}
 </main>
 {% endblock %}

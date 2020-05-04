@@ -4,11 +4,11 @@ from .news import News, SEPARATOR
 from .users import User
 from .category import Category
 from .db_session import create_session
-from algr.user_alg import get_user_by_email, AuthError, check_user, address
+from algorithms.user_alg import get_user_by_email, AuthError, check_user, address
 import random
 import os
 import requests
-from algr.news_alg import abort_if_news_not_found, check_cat_string_list, BadCategoryError, \
+from algorithms.news_alg import abort_if_news_not_found, check_cat_string_list, BadCategoryError, \
     BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name, get_response_by_news
 
 

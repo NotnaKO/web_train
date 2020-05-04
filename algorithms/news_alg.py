@@ -35,7 +35,7 @@ def abort_if_news_not_found(news_id, session=False):
         session = create_session()
     news = session.query(News).get(news_id)
     if not news:
-        abort(404, message=f"news {news_id} not found")
+        abort(404)
 
 
 def get_news_by_id(ids, session=False):

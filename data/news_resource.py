@@ -9,7 +9,8 @@ import random
 import os
 import requests
 from algorithms.news_alg import abort_if_news_not_found, check_cat_string_list, BadCategoryError, \
-    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name, get_response_by_news
+    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name, get_response_by_news, \
+    text_address_by_id
 
 
 # В этой ветке я подумаю о том, как оставить редактирование
@@ -50,53 +51,35 @@ class NewsResource(Resource):
         args = parser.parse_args()
         if not check_user(get_user_by_email(args['author']), args['password']):
             return jsonify({'error': 'Bad user'})
-        d = requests.delete(address + f'/api/v2/news/{news_id}', json={
-            'email': args['author'],
-            'password': args['password']
-        })
+        abort_if_news_not_found(news_id)
         session = create_session()
         user = session.query(User).filter(User.email == args['author']).first()
-        text_address = ''
-        for i in range(5):
-            a = args['header'] + str(user.id) + str(random.randint(1, 2 ** 14)) + '.txt'
-            n = session.query(News).filter(News.text_address == a).first()
-            if not n:
-                text_address = a
-                break
-        if not text_address:
-            return jsonify({'error': 'not_unique_header'})
-        if 'success' in d.json():
-            result = ''
-            for i in text_address:
-                if i.isdigit() or i.isalpha() or i == '.':
-                    result += i
-            news = News(author=user.id, header=args['header'], text_address=result)
-            sp = args['category_string_list'].split(',')
-            try:
-                check_cat_string_list(sp)
-            except EmptyParamsError:
-                return jsonify({'error': 'Empty category'})
-            except BadCategoryError:
-                return jsonify({'error': 'Bad categories'})
-            except BigLenCategoryError:
-                return jsonify({'error': 'Big length of category'})
-            except NotUniqueCategoryError:
-                return jsonify({'error': 'Not unique categories'})
-            for i in sp:
-                cat = get_category_by_name(i.strip(), session)
-                if cat:
-                    news.category.append(cat)
-                else:
-                    news.category.append(Category(name=i.strip()))
-            user = get_user_by_email(args['author'], session)
-            user.news.append(news)
-            session.merge(user)
-            session.commit()
-            with open(os.path.join('news/' + result), encoding='utf-8', mode='w') as text_file:
-                text_file.write(args['preview'] + SEPARATOR + args['text'])
-            return jsonify({'success': 'OK'})
-        else:
-            return d
+        news = session.query(News).get(news_id)
+        user.news.remove(news)
+        sp = args['category_string_list'].split(',')
+        try:
+            check_cat_string_list(sp)
+        except EmptyParamsError:
+            return jsonify({'error': 'Empty category'})
+        except BadCategoryError:
+            return jsonify({'error': 'Bad categories'})
+        except BigLenCategoryError:
+            return jsonify({'error': 'Big length of category'})
+        except NotUniqueCategoryError:
+            return jsonify({'error': 'Not unique categories'})
+        news.category = []
+        for i in sp:
+            cat = get_category_by_name(i.strip(), session)
+            if cat:
+                news.category.append(cat)
+            else:
+                news.category.append(Category(name=i.strip()))
+        user.news.append(news)
+        session.merge(user)
+        session.commit()
+        with open(os.path.join('news/' + news.text_address), encoding='utf-8', mode='w') as text_file:
+            text_file.write(args['preview'] + SEPARATOR + args['text'])
+        return jsonify({'success': 'OK'})
 
 
 class NewsListResource(Resource):

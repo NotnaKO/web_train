@@ -137,3 +137,10 @@ def get_category_by_name(name: str, session=False):
         session = create_session()
     cat = session.query(Category).filter(Category.name == name).first()
     return cat
+
+
+def text_address_by_id(news_id: int, session=False):
+    if not session:
+        session = create_session()
+    news = session.query(News).get(news_id)
+    return news.text_address

@@ -35,7 +35,7 @@ def abort_if_news_not_found(news_id, session=False):
         session = create_session()
     news = session.query(News).get(news_id)
     if not news:
-        abort(404, message=f"news {news_id} not found")
+        abort(404)
 
 
 def get_news_by_id(ids, session=False):
@@ -137,3 +137,10 @@ def get_category_by_name(name: str, session=False):
         session = create_session()
     cat = session.query(Category).filter(Category.name == name).first()
     return cat
+
+
+def text_address_by_id(news_id: int, session=False):
+    if not session:
+        session = create_session()
+    news = session.query(News).get(news_id)
+    return news.text_address

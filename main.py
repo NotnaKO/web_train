@@ -8,13 +8,13 @@ from wtforms.fields.html5 import EmailField
 from wtforms.validators import *
 from data import users_resourse, news_resource
 from data.db_session import global_init
-from algr.user_alg import get_params_to_show_user, MainNews, Zagl, get_user_by_email, get_user_by_id, AuthError
-from algr.news_alg import get_news_by_id, get_preview_and_text, get_string_list_by_data, EmptyParamsError, \
+from algorithms.user_alg import get_params_to_show_user, MainNews, Zagl, get_user_by_email, get_user_by_id, AuthError
+from algorithms.news_alg import get_news_by_id, get_preview_and_text, get_string_list_by_data, EmptyParamsError, \
     get_data_by_list, get_news_by_category_name, get_response_by_news, CATEGORY_LIST
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandex_lyceum_secret_key'
-global_init('db/economy_science.db')
+global_init('db/news_db.db')
 login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
@@ -26,7 +26,7 @@ api.add_resource(news_resource.NewsResource, '/api/v2/news/<int:news_id>')
 
 
 class RegisterForm(FlaskForm):
-    email = EmailField('Email', validators=[Email()])
+    email = EmailField('Email(Логин)', validators=[Email()])
     password = PasswordField('Пароль', validators=[DataRequired()])
     password_again = PasswordField('Повторите пароль', validators=[DataRequired()])
     surname = StringField('Фамилия', validators=[DataRequired()])

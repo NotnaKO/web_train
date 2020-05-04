@@ -4,14 +4,16 @@ from .news import News, SEPARATOR
 from .users import User
 from .category import Category
 from .db_session import create_session
-from algr.user_alg import get_user_by_email, AuthError, check_user, address
+from algorithms.user_alg import get_user_by_email, AuthError, check_user, address
 import random
 import os
 import requests
-from algr.news_alg import abort_if_news_not_found, check_cat_string_list, BadCategoryError, \
-    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name, get_response_by_news
+from algorithms.news_alg import abort_if_news_not_found, check_cat_string_list, BadCategoryError, \
+    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name, get_response_by_news, \
+    text_address_by_id
 
 
+# В этой ветке я подумаю о том, как оставить редактирование
 class NewsResource(Resource):
     def get(self, news_id):
         abort_if_news_not_found(news_id)
@@ -36,6 +38,47 @@ class NewsResource(Resource):
         news = session.query(News).get(news_id)
         session.delete(news)
         session.commit()
+        return jsonify({'success': 'OK'})
+
+    def put(self, news_id):
+        parser = reqparse.RequestParser()
+        parser.add_argument('password', required=True)
+        parser.add_argument('author', required=True, type=str)
+        parser.add_argument('header', required=True)
+        parser.add_argument('category_string_list', required=True, type=str)
+        parser.add_argument('preview', required=True, type=str)
+        parser.add_argument('text', required=True, type=str)
+        args = parser.parse_args()
+        if not check_user(get_user_by_email(args['author']), args['password']):
+            return jsonify({'error': 'Bad user'})
+        abort_if_news_not_found(news_id)
+        session = create_session()
+        user = session.query(User).filter(User.email == args['author']).first()
+        news = session.query(News).get(news_id)
+        user.news.remove(news)
+        sp = args['category_string_list'].split(',')
+        try:
+            check_cat_string_list(sp)
+        except EmptyParamsError:
+            return jsonify({'error': 'Empty category'})
+        except BadCategoryError:
+            return jsonify({'error': 'Bad categories'})
+        except BigLenCategoryError:
+            return jsonify({'error': 'Big length of category'})
+        except NotUniqueCategoryError:
+            return jsonify({'error': 'Not unique categories'})
+        news.category = []
+        for i in sp:
+            cat = get_category_by_name(i.strip(), session)
+            if cat:
+                news.category.append(cat)
+            else:
+                news.category.append(Category(name=i.strip()))
+        user.news.append(news)
+        session.merge(user)
+        session.commit()
+        with open(os.path.join('news/' + news.text_address), encoding='utf-8', mode='w') as text_file:
+            text_file.write(args['preview'] + SEPARATOR + args['text'])
         return jsonify({'success': 'OK'})
 
 

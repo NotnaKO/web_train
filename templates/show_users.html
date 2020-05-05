@@ -148,6 +148,7 @@
             {% if current_user.is_authenticated %}
             {% if current_user.position == 1 or (current_user.position == 2 and news1.author == current_user.id) %}
             <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news1.id}}">Редактировать новость</a>
+            <a class="btn btn-danger my-2 my-sm-0" href="/news/delete_news/{{news1.id}}">Удалить новость</a>
             {% endif %}
             {% endif %}<!-- /.blog-post -->
             {% if news2.z %}
@@ -162,6 +163,7 @@
             {% if current_user.is_authenticated %}
             {% if current_user.position == 1 or (current_user.position == 2 and news2.author == current_user.id) %}
             <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news2.id}}">Редактировать новость</a>
+            <a class="btn btn-danger my-2 my-sm-0" href="/news/delete_news/{{news2.id}}">Удалить новость</a>
             {% endif %}
             {% endif %}<!-- /.blog-post --> {% endif %}{% endif %}
             {% endblock %}

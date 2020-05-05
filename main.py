@@ -67,6 +67,7 @@ class UserForm(RegisterForm):
 class DeleteForm(FlaskForm):
     email = EmailField('Логин', validators=[Email()])
     password = PasswordField('Пароль', validators=[DataRequired()])
+    accept = BooleanField('Да', validators=[DataRequired()])
     submit = SubmitField('Удалить')
 
 
@@ -147,6 +148,7 @@ def login():
 
 
 @app.route('/register', methods=['GET', 'POST'])
+@login_required
 def reqister():
     reg_form = RegisterForm()
     if reg_form.validate_on_submit():
@@ -403,11 +405,13 @@ def show_news(number):
     return render_template('show_news.html', news=news, title='Новости')
 
 
-@app.route('/news/delete/<int:news_id>')
+@app.route('/news/delete_news/<int:news_id>', methods=['GET', 'POST'])
+@login_required
 def delete(news_id):
-    delete_form = DeleteForm
+    delete_form = DeleteForm()
     if delete_form.validate_on_submit():
-        resp_js = requests.delete(address + f'/api/v2/{news_id}', json={
+        s = f'/api/v2/news/{news_id}'
+        resp_js = requests.delete(address + s, json={
             'email': delete_form.email.data,
             'password': delete_form.password.data
         }).json()
@@ -468,13 +472,6 @@ def f():
 @app.route('/')  # Пока просто заглушка для удобства тестирования
 def main():
     return news_page()
-
-
-@app.route('/news/delete_news/<int:id>', methods=['GET', 'POST'])
-@login_required
-def news_delete(ids):
-    if 'success' in requests.delete(address + '/api/v2/news/{}'.format(ids)):
-        return redirect('/news')
 
 
 @app.route('/logout')

@@ -75,6 +75,7 @@
                 {% if current_user.is_authenticated %}
                 {% if current_user.position == 1 or (current_user.position == 2 and news4.author == current_user.id) %}
                 <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news4.id}}">Редактировать новость</a>
+                <a class="btn btn-danger my-2 my-sm-0" href="/news/delete_news/{{news4.id}}">Удалить новость</a>
                 {% endif %}
                 {% endif %}
             </div><!-- /.blog-post -->
@@ -88,6 +89,7 @@
                 {% if current_user.is_authenticated %}
                 {% if current_user.position == 1 or (current_user.position == 2 and news5.author == current_user.id) %}
                 <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news5.id}}">Редактировать новость</a>
+                <a class="btn btn-danger my-2 my-sm-0" href="/news/delete_news/{{news5.id}}">Удалить новость</a>
                 {% endif %}
                 {% endif %}
             </div><!-- /.blog-post -->
@@ -102,6 +104,7 @@
                 {% if current_user.is_authenticated %}
                 {% if current_user.position == 1 or (current_user.position == 2 and news6.author == current_user.id) %}
                 <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news6.id}}">Редактировать новость</a>
+                <a class="btn btn-danger my-2 my-sm-0" href="/news/delete_news/{{news6.id}}">Удалить новость</a>
                 {% endif %}
                 {% endif %}
             </div><!-- /.blog-post -->

@@ -20,9 +20,10 @@
         {{ error }}
     </p>
     {% endfor %}
-    <p>
-        Вы действительно хотите удалить новость с названием "{{news_header}}"
+    <p class="alert alert-danger">
+        Вы действительно хотите удалить новость с названием "{{news_header}}"?
     </p>
+    <p>{{ form.accept() }} {{ form.accept.label }}</p>
     <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
     {% if message %}
     <div class="alert alert-warning">{{message}}</div>

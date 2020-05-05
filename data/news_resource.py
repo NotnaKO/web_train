@@ -35,6 +35,8 @@ class NewsResource(Resource):
             return jsonify({'error': 'Bad password'})
         abort_if_news_not_found(news_id)
         news = session.query(News).get(news_id)
+        if not check_author_by_news_id(user, news):
+            return jsonify({'error': 'No rights'})
         session.delete(news)
         session.commit()
         return jsonify({'success': 'OK'})

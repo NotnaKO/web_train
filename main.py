@@ -64,6 +64,12 @@ class UserForm(RegisterForm):
     password_again = PasswordField('Повторите пароль')
 
 
+class DeleteForm(FlaskForm):
+    email = EmailField('Логин', validators=[Email()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    submit = SubmitField('Удалить')
+
+
 class Page:
     def __init__(self, i: int):
         self.id = i
@@ -395,6 +401,28 @@ def show_category_news_page(category: str, number):
 def show_news(number):
     news = MainNews(number, all_cat=True)
     return render_template('show_news.html', news=news, title='Новости')
+
+
+@app.route('/news/delete/<int:news_id>')
+def delete(news_id):
+    delete_form = DeleteForm
+    if delete_form.validate_on_submit():
+        resp_js = requests.delete(address + f'/api/v2/{news_id}', json={
+            'email': delete_form.email.data,
+            'password': delete_form.password.data
+        }).json()
+        if resp_js.get('error', False):
+            if resp_js['error'] == 'Bad user' or resp_js['error'] == 'Bad password':
+                delete_form.password.errors = ['Неверный логин или пароль']
+                news = get_news_by_id(news_id)
+                return render_template('delete_news.html', form=delete_form, news_header=news.header, title="Удаление")
+            elif resp_js['error'] == 'No rights':
+                abort(403)
+        else:
+            return redirect('/')
+    else:
+        news = get_news_by_id(news_id)
+        return render_template('delete_news.html', form=delete_form, news_header=news.header, title='Удаление')
 
 
 @app.route('/news/page/<int:number>')

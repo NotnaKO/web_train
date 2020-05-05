@@ -64,6 +64,13 @@ class UserForm(RegisterForm):
     password_again = PasswordField('Повторите пароль')
 
 
+class DeleteForm(FlaskForm):
+    email = EmailField('Логин', validators=[Email()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    accept = BooleanField('Да', validators=[DataRequired()])
+    submit = SubmitField('Удалить')
+
+
 class Page:
     def __init__(self, i: int):
         self.id = i
@@ -141,6 +148,7 @@ def login():
 
 
 @app.route('/register', methods=['GET', 'POST'])
+@login_required
 def reqister():
     reg_form = RegisterForm()
     if reg_form.validate_on_submit():
@@ -397,6 +405,30 @@ def show_news(number):
     return render_template('show_news.html', news=news, title='Новости')
 
 
+@app.route('/news/delete_news/<int:news_id>', methods=['GET', 'POST'])
+@login_required
+def delete(news_id):
+    delete_form = DeleteForm()
+    if delete_form.validate_on_submit():
+        s = f'/api/v2/news/{news_id}'
+        resp_js = requests.delete(address + s, json={
+            'email': delete_form.email.data,
+            'password': delete_form.password.data
+        }).json()
+        if resp_js.get('error', False):
+            if resp_js['error'] == 'Bad user' or resp_js['error'] == 'Bad password':
+                delete_form.password.errors = ['Неверный логин или пароль']
+                news = get_news_by_id(news_id)
+                return render_template('delete_news.html', form=delete_form, news_header=news.header, title="Удаление")
+            elif resp_js['error'] == 'No rights':
+                abort(403)
+        else:
+            return redirect('/')
+    else:
+        news = get_news_by_id(news_id)
+        return render_template('delete_news.html', form=delete_form, news_header=news.header, title='Удаление')
+
+
 @app.route('/news/page/<int:number>')
 def news_page(number=0, news_resp=None, by_author=False, title='Главная', by_category=False):
     def abort_if_page_not_found():
@@ -440,13 +472,6 @@ def f():
 @app.route('/')  # Пока просто заглушка для удобства тестирования
 def main():
     return news_page()
-
-
-@app.route('/news/delete_news/<int:id>', methods=['GET', 'POST'])
-@login_required
-def news_delete(ids):
-    if 'success' in requests.delete(address + '/api/v2/news/{}'.format(ids)):
-        return redirect('/news')
 
 
 @app.route('/logout')

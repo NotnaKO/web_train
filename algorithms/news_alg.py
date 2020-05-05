@@ -107,6 +107,7 @@ def get_response_by_news(news, auth=None, session=None):
     d['news']['author_surname'] = auth.surname
     d['news']['author_name'] = auth.name
     d['news']['author_id'] = auth.id
+    d['news']['date_for_sort'] = (news.modified_date.year, news.modified_date.month, news.modified_date.day)
     with open(os.path.join('news', news.text_address), encoding='utf-8') as f:
         d['news']['text'] = f.read()
     return jsonify(d)

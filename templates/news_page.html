@@ -72,6 +72,11 @@
                     + ' ' +
                     news4.author_name}}</a></p>
                 <p>{{news4.content}}</p>
+                {% if current_user.is_authenticated %}
+                {% if current_user.position == 1 or (current_user.position == 2 and news4.author == current_user.id) %}
+                <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news4.id}}">Редактировать новость</a>
+                {% endif %}
+                {% endif %}
             </div><!-- /.blog-post -->
             {% if news5.z %}
             <div class="blog-post">
@@ -80,6 +85,11 @@
                     + ' ' +
                     news5.author_name}}</a></p>
                 <p>{{news5.content}}</p>
+                {% if current_user.is_authenticated %}
+                {% if current_user.position == 1 or (current_user.position == 2 and news5.author == current_user.id) %}
+                <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news5.id}}">Редактировать новость</a>
+                {% endif %}
+                {% endif %}
             </div><!-- /.blog-post -->
             {% endif %}
             {% if news6.z %}
@@ -89,6 +99,11 @@
                     + ' ' +
                     news6.author_name}}</a></p>
                 <p>{{news6.content}}</p>
+                {% if current_user.is_authenticated %}
+                {% if current_user.position == 1 or (current_user.position == 2 and news6.author == current_user.id) %}
+                <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news6.id}}">Редактировать новость</a>
+                {% endif %}
+                {% endif %}
             </div><!-- /.blog-post -->
             {% endif %}
             {% endif %}

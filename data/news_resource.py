@@ -7,10 +7,9 @@ from .db_session import create_session
 from algorithms.user_alg import get_user_by_email, AuthError, check_user, address
 import random
 import os
-import requests
+from algorithms.check import check_author_by_news_id
 from algorithms.news_alg import abort_if_news_not_found, check_cat_string_list, BadCategoryError, \
-    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name, get_response_by_news, \
-    text_address_by_id
+    BigLenCategoryError, EmptyParamsError, NotUniqueCategoryError, get_category_by_name, get_response_by_news
 
 
 # В этой ветке я подумаю о том, как оставить редактирование
@@ -55,7 +54,11 @@ class NewsResource(Resource):
         session = create_session()
         user = session.query(User).filter(User.email == args['author']).first()
         news = session.query(News).get(news_id)
+        if not check_author_by_news_id(user, news):
+            return jsonify({'error': 'Bad user'})
         user.news.remove(news)
+        news.header = args['header']
+        news.preview = args['preview']
         sp = args['category_string_list'].split(',')
         try:
             check_cat_string_list(sp)

@@ -1,5 +1,5 @@
 from string import printable, ascii_letters, digits
-from .user_alg import get_user_by_email, AuthError
+from .user_alg import get_user_by_email, AuthError, User
 from flask import jsonify
 
 
@@ -184,3 +184,11 @@ def make_new_password(old, new, again, user):
         return p
     else:
         raise AuthError
+
+
+def check_author_by_news_id(author, news):
+    if type(author) != User:
+        return False
+    if news not in author.news:
+        return False
+    return True

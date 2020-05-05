@@ -386,6 +386,7 @@ def show_category_news_page(category: str, number):
     for i in news_and_session[0]:
         el = get_response_by_news(i, session=news_and_session[1]).json
         news_resp['news'].append(el['news'])
+    news_resp['news'].sort(key=lambda x: x['date_for_sort'])
     return news_page(number=number, news_resp=jsonify(news_resp), by_category=True,
                      title=translate[category])
 

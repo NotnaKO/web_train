@@ -143,12 +143,13 @@
                     ' +
                     news1.author_name}}</a></p>
                 <p>{{news1.content}}</p>
-                {% if current_user.is_authenticated %}
-                {% if current_user.position == 1 or (current_user.position == 2 and news1.author == current_user.id) %}
-                <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news1.id}}">Редактировать новость</a>
-                {% endif %}
-                {% endif %}
-            </div><!-- /.blog-post -->
+
+            </div>
+            {% if current_user.is_authenticated %}
+            {% if current_user.position == 1 or (current_user.position == 2 and news1.author == current_user.id) %}
+            <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news1.id}}">Редактировать новость</a>
+            {% endif %}
+            {% endif %}<!-- /.blog-post -->
             {% if news2.z %}
             <div class="blog-post">
                 <h2 class="blog-post-title" align="center">{{news2.header}}</h2>
@@ -157,12 +158,12 @@
                     ' +
                     news2.author_name}}</a></p>
                 <p>{{news2.content}}</p>
-                {% if current_user.is_authenticated %}
-                {% if current_user.position == 1 or (current_user.position == 2 and news2.author == current_user.id) %}
-                <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news2.id}}">Редактировать новость</a>
-                {% endif %}
-                {% endif %}
-            </div><!-- /.blog-post -->{% endif %}{% endif %}
+            </div>
+            {% if current_user.is_authenticated %}
+            {% if current_user.position == 1 or (current_user.position == 2 and news2.author == current_user.id) %}
+            <a class="btn btn-secondary my-2 my-sm-0" href="/news/edit_news/{{news2.id}}">Редактировать новость</a>
+            {% endif %}
+            {% endif %}<!-- /.blog-post --> {% endif %}{% endif %}
             {% endblock %}
         </div>
     </div>

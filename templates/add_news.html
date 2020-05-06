@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="register">Добавление новости</h1>
+<h1 class="register">{{action_header}}</h1>
 <form action="" method="post" class="form">
     {{ form.hidden_tag() }}
     {{ form.csrf_token }}

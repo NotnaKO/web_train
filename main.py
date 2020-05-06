@@ -94,8 +94,8 @@ def edit_news(ids):
             cat_str_list = get_string_list_by_data(ed_news_form.politic.data, ed_news_form.technology.data,
                                                    ed_news_form.health.data)
         except EmptyParamsError:
-            return render_template('add_news.html', title='Добавление новости', form=ed_news_form,
-                                   current_user=current_user,
+            return render_template('add_news.html', title='Редактирование новости', form=ed_news_form,
+                                   current_user=current_user, action_header='Редактирование новости',
                                    message="Пожалуйста, выберете категорию новости.")
         resp = requests.put(address + f'/api/v2/news/{ids}', json={
             'password': ed_news_form.password.data,
@@ -114,9 +114,11 @@ def edit_news(ids):
             ed_news_form.header.errors = ['Уже есть много статей с таким заголовком, пожалуйста выбирете другой.']
         elif resp_js['error'] == 'Empty category':
             return render_template('add_news.html', title='Редактирование новости', form=ed_news_form,
+                                   action_header='Редактирование новости',
                                    message='Пожалуста, выберете хотя бы одну категорию своей новости.')
         else:
             return render_template('add_news.html', title='Редактирование новости', form=ed_news_form,
+                                   action_header='Редактирование новости',
                                    message='Произошла непредвиденная ошибка, пожалуйста попробуйте позже.')
     news = get_news_by_id(ids)
     if news.user == current_user or current_user.position == 1:
@@ -126,7 +128,8 @@ def edit_news(ids):
         ed_news_form.preview.data, ed_news_form.text.data = get_preview_and_text(news.text_address)
     else:
         abort(404)
-    return render_template('add_news.html', title='Редактирование новости', form=ed_news_form)
+    return render_template('add_news.html', title='Редактирование новости', action_header='Редактирование новости',
+                           form=ed_news_form)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -331,7 +334,7 @@ def add_news():
                                                    news_form.health.data)
         except EmptyParamsError:
             return render_template('add_news.html', title='Добавление новости', form=news_form,
-                                   current_user=current_user,
+                                   current_user=current_user, action_header='Добавление новости',
                                    message="Пожалуйста, выберете категорию новости.")
         if current_user.is_authenticated:
             resp = requests.post(address + '/api/v2/news', json={
@@ -375,9 +378,10 @@ def add_news():
             return redirect('/news')
         else:
             return render_template('add_news.html', title='Добавление новости', form=news_form,
-                                   current_user=current_user,
+                                   current_user=current_user, action_header='Добавление новости',
                                    message='Произошла непредвиденная ошибка, пожалуйста попробуйте позже.')
-    return render_template('add_news.html', title='Добавление новости', form=news_form, current_user=current_user)
+    return render_template('add_news.html', title='Добавление новости', action_header='Добавление новости',
+                           form=news_form, current_user=current_user)
 
 
 @app.route('/news/category/<category>/<int:number>')

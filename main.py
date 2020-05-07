@@ -151,7 +151,6 @@ def login():
 
 
 @app.route('/register', methods=['GET', 'POST'])
-@login_required
 def reqister():
     reg_form = RegisterForm()
     if reg_form.validate_on_submit():

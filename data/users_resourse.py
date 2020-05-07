@@ -8,8 +8,8 @@ from .news import News
 
 
 def abort_if_user_not_found(user_id):
-    session = create_session()
-    user = session.query(User).get(user_id)
+    new_session = create_session()
+    user = new_session.query(User).get(user_id)
     if not user:
         abort(404, message=f"user {user_id} not found")
 
@@ -17,16 +17,16 @@ def abort_if_user_not_found(user_id):
 class UserResource(Resource):
     def get(self, user_id):
         abort_if_user_not_found(user_id)
-        session = create_session()
-        user = session.query(User).get(user_id)
+        new_session = create_session()
+        user = new_session.query(User).get(user_id)
         return jsonify({'user': user.to_dict(
             only=('id', 'surname', 'name', 'age', 'position', 'email', 'address'))})
 
     def delete(self, user_id):
-        parser = reqparse.RequestParser()
-        parser.add_argument('email', required=True)
-        parser.add_argument('password', required=True)
-        args = parser.parse_args()
+        args_parser = reqparse.RequestParser()
+        args_parser.add_argument('email', required=True)
+        args_parser.add_argument('password', required=True)
+        args = args_parser.parse_args()
         try:
             user = get_user_by_email(args['email'])
         except AuthError:
@@ -34,10 +34,10 @@ class UserResource(Resource):
         if not user.check_password(args['password']):
             return jsonify({'error': 'Bad password'})
         abort_if_user_not_found(user_id)
-        session = create_session()
-        user = session.query(User).get(user_id)
-        session.delete(user)
-        session.commit()
+        new_session = create_session()
+        user = new_session.query(User).get(user_id)
+        new_session.delete(user)
+        new_session.commit()
         return jsonify({'success': 'OK'})
 
     def put(self, user_id):
@@ -58,7 +58,7 @@ class UserResource(Resource):
             if not user.check_password(args['password']):
                 return jsonify({'error': 'Bad password'})
             if 'success' in self.delete(user_id).json:
-                session = create_session()
+                new_session = create_session()
                 user = User(
                     surname=args['surname'],
                     name=args['name'],
@@ -68,13 +68,13 @@ class UserResource(Resource):
                     position=args['position'],
                     id=user_id
                 )
-                session.add(user)
+                new_session.add(user)
                 user.set_password(args['password'])
                 for n in news:
-                    news = session.query(News).get(n.id)
+                    news = new_session.query(News).get(n.id)
                     user.news.append(news)
-                session.merge(user)
-                session.commit()
+                new_session.merge(user)
+                new_session.commit()
                 if not any([args['old_password'], args['new_password'], args['password_again']]):
                     return jsonify({'success': 'OK'})
         if args['old_password'] and args['new_password'] and args['password_again']:
@@ -87,11 +87,11 @@ class UserResource(Resource):
                 return jsonify({'error': 'Bad old password'})
             except NotEqualError:
                 return jsonify({'error': 'Not equal new and again'})
-            session = create_session()
+            new_session = create_session()
             user = get_user_by_id(user_id)
             user.set_password(args['new_password'])
-            session.merge(user)
-            session.commit()
+            new_session.merge(user)
+            new_session.commit()
             return jsonify({'success': 'OK'})
         if (any([args['old_password'], args['new_password'], args['password_again']]) and args['password']) and not all(
                 [args['old_password'], args['new_password'], args['password_again']]):
@@ -109,8 +109,8 @@ parser.add_argument('address', required=True)
 
 class UserListResource(Resource):
     def get(self):
-        session = create_session()
-        user = session.query(User).all()
+        new_session = create_session()
+        user = new_session.query(User).all()
         return jsonify({'user': [item.to_dict(
             only=('id', 'surname', 'name')) for item in user]})
 
@@ -122,7 +122,7 @@ class UserListResource(Resource):
         er = full_decode_errors(args)
         if er is not True:
             return er
-        session = create_session()
+        new_session = create_session()
         user = User(
             surname=args['surname'],
             name=args['name'],
@@ -132,6 +132,6 @@ class UserListResource(Resource):
             position=args['position']
         )
         user.set_password(args['password'])
-        session.add(user)
-        session.commit()
+        new_session.add(user)
+        new_session.commit()
         return jsonify({'success': 'OK'})

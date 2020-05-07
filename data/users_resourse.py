@@ -2,7 +2,7 @@ from flask import *
 from flask_restful import reqparse, abort, Resource
 from .db_session import create_session
 from .users import User
-from algorithms.user_alg import get_user_by_email, AuthError, get_user_by_id, address
+from algorithms.user_alg import get_user_by_email, AuthError, get_user_by_id, ADDRESS
 from algorithms.check import full_decode_errors, some_decode_errors, make_new_password, NotEqualError
 from .news import News
 

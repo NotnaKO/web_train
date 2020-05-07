@@ -4,7 +4,7 @@ from .news import News, SEPARATOR
 from .users import User
 from .category import Category
 from .db_session import create_session
-from algorithms.user_alg import get_user_by_email, AuthError, check_user, address
+from algorithms.user_alg import get_user_by_email, AuthError, check_user, ADDRESS
 import random
 import os
 from algorithms.check import check_author_by_news_id

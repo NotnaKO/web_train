@@ -18,7 +18,7 @@ global_init('db/news_db.db')
 login_manager = LoginManager()
 login_manager.init_app(app)
 api = Api(app)
-address = users_resourse.address
+ADDRESS = users_resourse.ADDRESS
 api.add_resource(users_resourse.UserListResource, '/api/v2/users')
 api.add_resource(news_resource.NewsListResource, '/api/v2/news')
 api.add_resource(users_resourse.UserResource, '/api/v2/users/<int:user_id>')
@@ -32,7 +32,7 @@ class RegisterForm(FlaskForm):
     surname = StringField('Фамилия', validators=[DataRequired()])
     name = StringField('Имя', validators=[DataRequired()])
     age = IntegerField('Возраст', validators=[DataRequired()])
-    address = StringField('Адрес', validators=[DataRequired()])
+    ADDRESS = StringField('Адрес', validators=[DataRequired()])
     submit = SubmitField('Зарегистрироваться')
 
 
@@ -97,7 +97,7 @@ def edit_news(ids):
             return render_template('add_news.html', title='Редактирование новости', form=ed_news_form,
                                    current_user=current_user, action_header='Редактирование новости',
                                    message="Пожалуйста, выберете категорию новости.")
-        resp = requests.put(address + f'/api/v2/news/{ids}', json={
+        resp = requests.put(ADDRESS + f'/api/v2/news/{ids}', json={
             'password': ed_news_form.password.data,
             'author': current_user.email,
             'preview': ed_news_form.preview.data,
@@ -160,7 +160,7 @@ def reqister():
             reg_form.password.errors = ["Пароли не совпадают"]
             return render_template('register.html', title='Регистрация',
                                    form=reg_form)
-        resp = requests.post(address + '/api/v2/users', json={
+        resp = requests.post(ADDRESS + '/api/v2/users', json={
             'name': reg_form.name.data,
             'surname': reg_form.surname.data,
             'age': reg_form.age.data,
@@ -212,7 +212,7 @@ def show_users_data(ids):
     user_form = UserForm()
     if user_form.validate_on_submit():
         user = get_user_by_id(ids)
-        resp = requests.put(address + f'/api/v2/users/{ids}', json={
+        resp = requests.put(ADDRESS + f'/api/v2/users/{ids}', json={
             'name': user_form.name.data,
             'surname': user_form.surname.data,
             'age': user_form.age.data,
@@ -337,7 +337,7 @@ def add_news():
                                    current_user=current_user, action_header='Добавление новости',
                                    message="Пожалуйста, выберете категорию новости.")
         if current_user.is_authenticated:
-            resp = requests.post(address + '/api/v2/news', json={
+            resp = requests.post(ADDRESS + '/api/v2/news', json={
                 'author': current_user.email,
                 'header': news_form.header.data,
                 'category_string_list': cat_str_list,
@@ -347,7 +347,7 @@ def add_news():
             }).json()
             user = current_user
         else:
-            resp = requests.post(address + '/api/v2/news', json={
+            resp = requests.post(ADDRESS + '/api/v2/news', json={
                 'author': news_form.author.data,
                 'header': news_form.header.data,
                 'category_string_list': cat_str_list,
@@ -357,7 +357,7 @@ def add_news():
             }).json()
             user = get_user_by_email(news_form.author.data)
         if 'success' in resp and user.position == 3:
-            p = requests.put(address + '/api/v2/users/{}'.format(user.id), json={
+            p = requests.put(ADDRESS + '/api/v2/users/{}'.format(user.id), json={
                 'id': user.id,
                 'name': user.name,
                 'surname': user.surname,
@@ -415,7 +415,7 @@ def delete(news_id):
     delete_form = DeleteForm()
     if delete_form.validate_on_submit():
         s = f'/api/v2/news/{news_id}'
-        resp_js = requests.delete(address + s, json={
+        resp_js = requests.delete(ADDRESS + s, json={
             'email': delete_form.email.data,
             'password': delete_form.password.data
         }).json()
@@ -439,7 +439,7 @@ def news_page(number=0, news_resp=None, by_author=False, title='Главная',
         abort(404)
 
     if news_resp is None:
-        news = requests.get(address + '/api/v2/news').json()['news']
+        news = requests.get(ADDRESS + '/api/v2/news').json()['news']
     else:
         news = news_resp.json['news']
     max_news = len(news)

@@ -3,7 +3,7 @@ from data.users import User
 import requests
 from data.news import SEPARATOR
 
-address = 'https://pynews.herokuapp.com'
+ADDRESS = 'https://pynews.herokuapp.com'
 
 
 # address = 'http://127.0.0.1:5000'
@@ -19,7 +19,7 @@ def check_user(use, pas):
 
 class MainNews:
     def __init__(self, idi: int, all_cat=False):
-        news = requests.get(address + f'/api/v2/news/{idi}').json()['news']
+        news = requests.get(ADDRESS + f'/api/v2/news/{idi}').json()['news']
         self.header = news['header']
         self.preview, self.content = news['text'].split(SEPARATOR)
         self.politic, self.technology, self.health = news['politic'] if 'politic' in news else False, news[
